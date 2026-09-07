@@ -24,6 +24,16 @@ Open [`index.html`](./index.html) in a browser. No build step, no dependencies b
 
 This repo is Vercel-ready. Push to GitHub, then in the Vercel dashboard click **Add New → Project**, pick the repo, leave every setting at default (Framework Preset = Other) and deploy. [`vercel.json`](./vercel.json) sets clean URLs, no-cache for `index.html` (so redeploys are seen instantly), and sensible security headers.
 
+## Install as an app (PWA)
+
+Once deployed over HTTPS, the site is a Progressive Web App:
+
+- **Desktop (Chrome, Edge, Brave, Arc)** — an install icon appears in the URL bar. Click it to install.
+- **Android (Chrome, Samsung Internet)** — you'll see an "Install app" prompt or an "Add to home screen" option in the menu.
+- **iOS Safari** — tap the Share button, then "Add to Home Screen".
+
+Once installed, the app opens standalone (no browser chrome), works offline (cached by a service worker), and shows up in your device's app switcher like any other app. Your data still lives in the same per-browser `localStorage` — installing doesn't move or sync it.
+
 ## Data safety
 
 - Every Import first snapshots the current state to `garageFund.preImport.<timestamp>` (keeps the last 3), so a wrong-file mistake is recoverable via DevTools.
