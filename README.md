@@ -6,22 +6,31 @@ A single-file personal command center bundling three tools behind one dark Mater
 - **Study Command Center** — lessons, todos, streaks.
 - **Calculator** — basic arithmetic with history and keyboard support.
 
-All state lives in the visiting browser's `localStorage` — nothing is sent to any server. Use **Settings → Export JSON** regularly.
+## Where data lives
+
+The code is a plain static HTML file — the deploy just serves it. All your data is kept in the visiting browser's `localStorage`, which means:
+
+- Every browser and every device starts empty. Chrome on your laptop ≠ Safari on your phone.
+- Private/incognito windows start empty and forget on close.
+- Clearing site data wipes it.
+
+To move between devices or recover from a wipe, use **Settings → Export JSON** on the source and **Settings → Import JSON** on the destination. The dashboard shows a nag banner if it's been more than 30 days since the last Export.
 
 ## Run locally
 
-Just open [`index.html`](./index.html) in a browser. No build step, no dependencies beyond Google Fonts (loaded from CDN).
+Open [`index.html`](./index.html) in a browser. No build step, no dependencies beyond Google Fonts (loaded from CDN).
 
 ## Deploy
 
-This repo is Vercel-ready. Push to GitHub, then in the Vercel dashboard click **Add New → Project**, pick the repo, and deploy — the [`vercel.json`](./vercel.json) sets clean URLs and sensible cache headers for the static HTML.
+This repo is Vercel-ready. Push to GitHub, then in the Vercel dashboard click **Add New → Project**, pick the repo, leave every setting at default (Framework Preset = Other) and deploy. [`vercel.json`](./vercel.json) sets clean URLs, no-cache for `index.html` (so redeploys are seen instantly), and sensible security headers.
 
 ## Data safety
 
-- The app auto-snapshots your current state to a `garageFund.preImport.*` localStorage key before every Import, keeping the last 3.
-- The dashboard shows a nag banner if you haven't exported in 30 days.
-- `*.json` is gitignored so raw ledger exports never end up in the repo by accident.
+- Every Import first snapshots the current state to `garageFund.preImport.<timestamp>` (keeps the last 3), so a wrong-file mistake is recoverable via DevTools.
+- The dashboard shows a nag banner after 30 days without an Export.
+- A welcome banner points first-time visitors on a fresh browser to Import if they have a JSON from elsewhere.
+- `*.json` is gitignored so raw ledger exports never end up in the repo.
 
-## Schema migrations
+## Schema
 
-`localStorage['garageFund.v5.1']` holds the Garage Fund state. The key name is frozen at `v5.1` even though the current schema is `5.5` — the `Storage.migrate()` ladder handles upgrades transparently, and freezing the key means older builds can still read the same slot.
+`localStorage['garageFund.v5.1']` holds the Garage Fund state. The key name is frozen at `v5.1` even though the current schema is `5.5` — the `Storage.migrate()` ladder upgrades transparently, and freezing the key means older builds can still read the same slot. Study Command Center uses its own separate key (`studyCommandCenterV1`).

@@ -3,6 +3,10 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="description" content="Personal command center: Garage Fund savings tracker, Study Command Center, and a Calculator. Data stays in your browser — export to move between devices." />
+<meta name="theme-color" content="#7d3900" />
+<meta name="color-scheme" content="dark" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%237d3900'/%3E%3Ctext x='16' y='22' font-family='system-ui,sans-serif' font-size='18' font-weight='700' text-anchor='middle' fill='%23ffdbc7'%3EC%3C/text%3E%3C/svg%3E" />
 <title>Command Center — Garage Fund &amp; Study Tracker</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -412,8 +416,12 @@
 
 <main>
   <section id="view-dashboard">
+    <div id="welcomeBanner" class="alert" hidden>
+      <span class="alert-text"><span class="material-symbols-outlined">waving_hand</span> First time on this device? Data is scoped to this browser. If you have a JSON export from elsewhere, import it — otherwise start logging and export a backup once you have data worth keeping.</span>
+      <button class="btn small primary" id="welcomeImportBtn">Import JSON</button>
+    </div>
     <div id="backupNag" class="alert" hidden>
-      <span class="alert-text"><span class="material-symbols-outlined">cloud_off</span> Your data lives only in this browser. It's been over 30 days since your last export — back it up now.</span>
+      <span class="alert-text"><span class="material-symbols-outlined">cloud_off</span> No export in the last 30 days. Data is stored per-browser — export now so you can restore after a wipe or move to another device.</span>
       <button class="btn small primary" id="backupNagExport">Export JSON</button>
     </div>
     <div id="celebrationBanner" class="celebration" hidden>
@@ -701,7 +709,7 @@
   </section>
 </main>
 
-<footer>Garage Fund v6.0 · localStorage only · nothing leaves this browser</footer>
+<footer>Garage Fund v6.0 · Data stored per-browser · Export to move between devices</footer>
 
 <!-- MODALS -->
 <div class="modal-back" id="modal">
@@ -981,7 +989,7 @@
     <div class="grid two">
       <div class="card">
         <h3><span class="dot"></span>Backup</h3>
-        <p style="color:var(--md-on-surface-variant)">Everything is stored locally in this browser. Export a backup regularly, especially before clearing browser data.</p>
+        <p style="color:var(--md-on-surface-variant)">Data is scoped to this browser on this device — a different browser, another device, or private/incognito mode all start empty. Export regularly, and always before clearing site data.</p>
         <div class="row">
           <button class="btn" id="scExportBtn"><span class="material-symbols-outlined">download</span>Export JSON</button>
           <button class="btn" id="scImportBtn"><span class="material-symbols-outlined">upload</span>Import JSON</button>
@@ -998,7 +1006,7 @@
 
 </main>
 
-<footer>Study Command Center · data lives in this browser only (localStorage) · export regularly</footer>
+<footer>Study Command Center · Data stored per-browser · Export to move between devices</footer>
 
 <div class="modal-back" id="scModalBack">
   <div class="modal">
@@ -2370,7 +2378,7 @@ const Events = (() => {
     $('#importBtn').addEventListener('click', () => $('#importFile').click());
     $('#importFile').addEventListener('change', async e => {
       const file = e.target.files[0]; if (!file) return;
-      const ok = await modal('Import data?', 'This will replace everything in this browser. A safety snapshot of your current data is saved automatically so you can recover if this was the wrong file.');
+      const ok = await modal('Import data?', 'This replaces the Garage Fund data in this browser. A safety snapshot of the current state is saved automatically, so you can recover if this was the wrong file.');
       if (!ok) { e.target.value = ''; return; }
       try {
         const text = await file.text();
@@ -2434,15 +2442,23 @@ const Events = (() => {
     });
   }
 
-  function checkBackupNag() {
+  function checkBanners() {
     const nag = document.getElementById('backupNag');
-    if (!nag) return;
+    const welcome = document.getElementById('welcomeBanner');
     let lastExport;
     try { lastExport = localStorage.getItem('garageFund.lastExport'); } catch(e){}
-    const hasData = (Store.get().transactions || []).length > 0;
-    if (!hasData) { nag.hidden = true; return; }
-    const stale = !lastExport || (Date.now() - new Date(lastExport).getTime()) > 30 * 24 * 60 * 60 * 1000;
-    nag.hidden = !stale;
+    const s = Store.get();
+    const hasData = (s.transactions || []).length > 0 ||
+                    (s.debts || []).length > 0 ||
+                    (s.flips || []).length > 0 ||
+                    (s.sheinEarnings || []).length > 0;
+    // Empty on this device AND never exported here → likely a fresh device visit.
+    if (welcome) welcome.hidden = hasData || !!lastExport;
+    // Has data but hasn't been exported in 30 days → nag.
+    if (nag) {
+      const stale = !lastExport || (Date.now() - new Date(lastExport).getTime()) > 30 * 24 * 60 * 60 * 1000;
+      nag.hidden = !hasData || !stale;
+    }
   }
 
   function init() {
@@ -2453,7 +2469,9 @@ const Events = (() => {
 
     const nagBtn = document.getElementById('backupNagExport');
     if (nagBtn) nagBtn.addEventListener('click', () => document.getElementById('exportBtn').click());
-    checkBackupNag();
+    const welcomeBtn = document.getElementById('welcomeImportBtn');
+    if (welcomeBtn) welcomeBtn.addEventListener('click', () => document.getElementById('importBtn').click());
+    checkBanners();
 
     const tab = Store.get().ui.tab || 'dashboard';
     document.querySelector(`#tabs button[data-tab="${tab}"]`).click();
@@ -3148,7 +3166,7 @@ Render.all();
     $('#scImportBtn').addEventListener('click', ()=> $('#scImportFile').click());
     $('#scImportFile').addEventListener('change', async e=>{
       const file = e.target.files[0]; if(!file) return;
-      const ok = await modal('Import data?', 'This will replace everything in this browser.');
+      const ok = await modal('Import data?', 'This replaces the Study Command Center data in this browser. Export first if you want a backup.');
       if(!ok) return;
       try{
         const data = JSON.parse(await file.text());
