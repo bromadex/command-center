@@ -131,7 +131,10 @@
   .row{display:flex; gap:10px; flex-wrap:wrap}
   .row > *{flex:1; min-width:140px}
   label{display:block; font:500 12px 'Roboto'; color:var(--md-on-surface-variant); text-transform:none; letter-spacing:.01em; margin-bottom:4px}
-  input,select,textarea{width:100%; background:transparent; border:1px solid var(--md-outline); color:var(--md-on-surface); padding:10px 12px; border-radius:4px; font:400 14px 'Roboto'; outline:none}
+  /* 16px input font on mobile prevents iOS Safari from auto-zooming on focus.
+     Reset to 14px above the 600px breakpoint so the desktop density stays. */
+  input,select,textarea{width:100%; background:transparent; border:1px solid var(--md-outline); color:var(--md-on-surface); padding:10px 12px; border-radius:4px; font:400 16px 'Roboto'; outline:none}
+  @media (min-width: 601px){ input,select,textarea{font-size:14px} }
   input:focus,select:focus{border-color:var(--md-primary); border-width:2px; padding:9px 11px}
   .mono input{font-family:'Roboto Mono',monospace}
   button.btn{background:var(--md-surface-high); color:var(--md-on-surface); border:1px solid var(--md-outline); padding:10px 20px; border-radius:100px; cursor:pointer; font:500 13px 'Roboto'; letter-spacing:.01em; text-transform:none; transition:.15s; display:inline-flex; align-items:center; gap:6px}
@@ -149,6 +152,9 @@
   th{font:500 12px 'Roboto'; color:var(--md-on-surface-variant); text-transform:none; letter-spacing:.01em}
   td.amt{font-family:'Roboto Mono',monospace; text-align:right; white-space:nowrap}
   tr:hover td{background:rgba(255,255,255,.02)}
+  /* Cards that hold wide tables/lists must scroll horizontally rather than
+     force the whole page to widen and cause page-level horizontal scroll. */
+  #ledgerCard,#budgetTable,#owedToMe,#iOwe,#sheinCard,#recentCard{overflow-x:auto}
   .empty{color:var(--md-on-surface-variant); text-align:center; padding:24px; font-style:italic}
   .tag{display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:100px; font:500 11px 'Roboto'; letter-spacing:.01em; text-transform:none}
   .tag.in{background:rgba(161,212,137,.16); color:var(--md-success)}
@@ -190,12 +196,13 @@
   footer{color:var(--md-on-surface-variant); text-align:center; padding:24px; font-size:12px}
   .ml-badge{display:inline-flex; align-items:center; gap:4px; background:rgba(168,200,255,.14); color:var(--md-info); font:500 11px 'Roboto'; padding:2px 8px; border-radius:100px; margin-left:6px}
   .ml-badge .material-symbols-outlined{font-size:14px}
+  .grid.car-fund-stats{grid-template-columns:repeat(3,1fr)}
   @media (max-width: 900px){
-    .grid.stats,.grid.four,.grid.two{grid-template-columns:1fr 1fr}
+    .grid.stats,.grid.four,.grid.two,.grid.car-fund-stats{grid-template-columns:1fr 1fr}
     header.top{flex-direction:column; gap:10px; align-items:stretch}
   }
   @media (max-width: 600px){
-    .grid.stats,.grid.four,.grid.two{grid-template-columns:1fr}
+    .grid.stats,.grid.four,.grid.two,.grid.car-fund-stats{grid-template-columns:1fr}
   }
 
 </style>
@@ -433,7 +440,10 @@
       <div class="card">
         <h3><span class="dot"></span><span class="material-symbols-outlined">directions_car</span> Car Fund Progress</h3>
         <div class="gauge-wrap" id="gaugeWrap"></div>
-        <div class="grid stats" id="carFundStats" style="grid-template-columns:repeat(3,1fr); margin-top:12px"></div>
+        <!-- Three-up on desktop, two on tablet, stacked on phones. The old
+             inline grid-template-columns:repeat(3,1fr) forced 3 columns even
+             at 375px, squashing the numbers unreadably. -->
+        <div class="grid car-fund-stats" id="carFundStats" style="margin-top:12px"></div>
       </div>
     </div>
 
