@@ -1,0 +1,3375 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Command Center — Garage Fund &amp; Study Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" rel="stylesheet">
+<style>
+
+  :root{
+    --md-bg:#141218; --md-surface:#1d1b20; --md-surface-high:#2b2930; --md-surface-highest:#36343b;
+    --md-outline:#48454e; --md-outline-variant:#322f35;
+    --md-on-surface:#e6e0e9; --md-on-surface-variant:#cac4cf; --ink-faint:#938f99;
+    --md-success:#a1d489; --md-on-success-container:#1f3712;
+    --md-error:#ffb4ab; --md-on-error-container:#93000a;
+    --shadow-1:0 1px 2px rgba(0,0,0,.5), 0 1px 3px 1px rgba(0,0,0,.35);
+    --shadow-2:0 1px 2px rgba(0,0,0,.5), 0 2px 6px 2px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  /* The [hidden] attribute must beat any component CSS (e.g. .alert{display:flex})
+     so banners set to hidden=true actually disappear instead of flashing on load. */
+  [hidden]{display:none !important}
+  html,body{margin:0;padding:0;background:var(--md-bg); color:var(--md-on-surface); font:14px/1.45 'Roboto',system-ui,sans-serif; min-height:100vh}
+  .material-symbols-outlined{font-family:'Material Symbols Outlined'; font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; font-size:20px; vertical-align:middle; line-height:1; user-select:none; font-feature-settings:'liga'}
+  /* Hide icon glyphs until the web font has loaded so we never leak literal
+     ligature names ("directions_car") while offline or on a slow network. */
+  html:not(.fonts-ready) .material-symbols-outlined{visibility:hidden}
+
+  /* ===== App switcher (top-level, sits above whichever app is active) ===== */
+  .app-switcher{ display:flex; gap:8px; padding:10px 24px; background:#0c0d10; border-bottom:1px solid var(--md-outline-variant); position:sticky; top:0; z-index:50; align-items:center }
+  .app-switcher .sw-label{ color:var(--ink-faint); font:500 11px 'Roboto'; letter-spacing:.04em; text-transform:uppercase; margin-right:6px }
+  .app-switcher button{ background:transparent; border:1px solid var(--md-outline); color:var(--md-on-surface-variant); padding:8px 16px; border-radius:100px; cursor:pointer; font:500 13px 'Roboto'; display:inline-flex; align-items:center; gap:6px }
+  .app-switcher button.active.gf-active{ background:#7d3900; color:#ffdbc7; border-color:transparent }
+  .app-switcher button.active.sc-active{ background:#324285; color:#dde1ff; border-color:transparent }
+  .app-switcher button.active.calc-active{ background:#0f5132; color:#c3f7d8; border-color:transparent }
+  .app-switcher button:hover:not(.active){ background:var(--md-surface-high); color:var(--md-on-surface) }
+
+</style>
+<style id="calc-style">
+
+  #app-calculator{
+    /* Material Design 3 — dark scheme, teal/green seed color (third accent, distinct from amber and violet) */
+    --md-primary:#7dd9ab; --md-on-primary:#003920; --md-primary-container:#0f5132; --md-on-primary-container:#c3f7d8;
+  }
+  #app-calculator header.top{display:flex; align-items:center; padding:16px 24px; border-bottom:1px solid var(--md-outline-variant); position:sticky; top:41px; background:rgba(20,18,24,.92); backdrop-filter:blur(8px); z-index:10}
+  #app-calculator .brand{display:flex; align-items:center; gap:12px}
+  #app-calculator .brand .logo{width:40px; height:40px; border-radius:12px; background:var(--md-primary-container); color:var(--md-on-primary-container); display:grid; place-items:center}
+  #app-calculator .brand h1{margin:0; font-size:22px; font-weight:500}
+  #app-calculator .brand small{color:var(--md-on-surface-variant)}
+  #app-calculator main{max-width:420px; margin:0 auto; padding:24px}
+  #app-calculator .card{background:var(--md-surface); border:1px solid var(--md-outline-variant); border-radius:16px; padding:20px; box-shadow:var(--shadow-1)}
+  #calcDisplay{ text-align:right; padding:10px 6px 18px; }
+  #calcPrevLine{ color:var(--md-on-surface-variant); font:400 15px 'Roboto Mono'; min-height:20px; overflow-wrap:anywhere }
+  #calcMainLine{ color:var(--md-on-surface); font:400 42px 'Roboto Mono'; margin-top:4px; overflow-wrap:anywhere; line-height:1.1 }
+  #calcGrid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:8px }
+  .calc-btn{ background:var(--md-surface-high); border:1px solid var(--md-outline-variant); color:var(--md-on-surface); font:500 18px 'Roboto'; border-radius:14px; padding:16px 0; cursor:pointer; transition:.1s }
+  .calc-btn:hover{ background:var(--md-surface-highest) }
+  .calc-btn:active{ transform:scale(0.96) }
+  .calc-btn.calc-fn{ color:var(--md-primary) }
+  .calc-btn.calc-op{ background:var(--md-primary-container); color:var(--md-on-primary-container); border-color:transparent }
+  .calc-btn.calc-op:hover{ filter:brightness(1.15) }
+  .calc-btn.calc-eq{ background:var(--md-primary); color:var(--md-on-primary); border-color:transparent; font-size:20px }
+  .calc-btn.calc-eq:hover{ filter:brightness(1.1) }
+  #calcHistory .calc-hist-row{ display:flex; justify-content:space-between; gap:10px; padding:8px 4px; border-bottom:1px solid var(--md-outline-variant); font:400 13px 'Roboto Mono'; color:var(--md-on-surface-variant) }
+  #calcHistory .calc-hist-row b{ color:var(--md-on-surface); font-weight:500 }
+  #app-calculator .empty{ color:var(--md-on-surface-variant); text-align:center; padding:16px; font-style:italic }
+  #app-calculator footer{ color:var(--md-on-surface-variant); text-align:center; padding:24px; font-size:12px }
+  #app-calculator .btn.ghost{ background:transparent; border:1px solid var(--md-outline); color:var(--md-on-surface-variant); padding:6px 14px; border-radius:100px; font:500 12px 'Roboto'; cursor:pointer }
+  #app-calculator .btn.ghost:hover{ background:var(--md-surface-high); color:var(--md-on-surface) }
+  @media(max-width:480px){ #app-calculator main{ padding:16px } }
+</style>
+<style id="gf-style">
+
+  #app-garage-fund{
+    /* Material Design 3 — dark scheme, amber/orange seed color */
+    --md-bg:#141218; --md-surface:#1d1b20; --md-surface-high:#2b2930; --md-surface-highest:#36343b;
+    --md-outline:#48454e; --md-outline-variant:#322f35;
+    --md-on-surface:#e6e0e9; --md-on-surface-variant:#cac4cf;
+    --md-primary:#ffb68c; --md-on-primary:#5c2100; --md-primary-container:#7d3900; --md-on-primary-container:#ffdbc7;
+    --md-secondary:#e3c0a3; --md-on-secondary-container:#4a3728;
+    --md-success:#a1d489; --md-on-success-container:#1f3712;
+    --md-error:#ffb4ab; --md-on-error-container:#93000a;
+    --md-info:#a8c8ff; --md-on-info-container:#00315e;
+    --shadow-1:0 1px 2px rgba(0,0,0,.5), 0 1px 3px 1px rgba(0,0,0,.35);
+    --shadow-2:0 1px 2px rgba(0,0,0,.5), 0 2px 6px 2px rgba(0,0,0,.35);
+    /* legacy aliases kept so existing inline references still resolve sensibly */
+    --bg:var(--md-bg); --panel:var(--md-surface); --panel-2:var(--md-surface-high); --line:var(--md-outline-variant);
+    --ink:var(--md-on-surface); --ink-dim:var(--md-on-surface-variant); --ink-faint:#938f99;
+    --amber:var(--md-primary); --amber-hot:var(--md-primary-container); --mint:var(--md-success); --red:var(--md-error); --blue:var(--md-info);
+    --shadow:var(--shadow-1);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--md-bg); color:var(--md-on-surface); font:14px/1.45 'Roboto',system-ui,sans-serif; min-height:100vh}
+  h1,h2,h3,.display{font-family:'Roboto',sans-serif; font-weight:500; letter-spacing:0; text-transform:none}
+  .mono{font-family:'Roboto Mono',monospace}
+  .gauges{font-family:'Roboto',sans-serif}
+  .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; font-size:20px; vertical-align:middle; line-height:1; user-select:none}
+  header.top{display:flex; align-items:center; justify-content:space-between; padding:16px 24px; border-bottom:1px solid var(--md-outline-variant); position:sticky; top:0; background:rgba(20,18,24,.92); backdrop-filter:blur(8px); z-index:10}
+  .brand{display:flex; align-items:center; gap:12px}
+  .brand .logo{width:40px; height:40px; border-radius:12px; background:var(--md-primary-container); display:grid; place-items:center; color:var(--md-on-primary-container)}
+  .brand h1{margin:0; font-size:22px; font-weight:500; color:var(--md-on-surface)}
+  .brand small{color:var(--md-on-surface-variant); font-family:'Roboto'; text-transform:none; letter-spacing:0}
+  nav.tabs{display:flex; gap:2px; background:var(--md-surface); padding:4px; border-radius:100px; border:1px solid var(--md-outline-variant); overflow-x:auto}
+  nav.tabs button{background:transparent; border:0; color:var(--md-on-surface-variant); padding:9px 16px; border-radius:100px; cursor:pointer; font:500 13px 'Roboto'; letter-spacing:.01em; text-transform:none; white-space:nowrap; display:flex; align-items:center; gap:6px}
+  nav.tabs button .material-symbols-outlined{font-size:18px}
+  nav.tabs button.active{background:var(--md-primary-container); color:var(--md-on-primary-container)}
+  nav.tabs button:hover:not(.active){color:var(--md-on-surface); background:var(--md-surface-high)}
+  main{max-width:1200px; margin:0 auto; padding:24px}
+  .grid{display:grid; gap:16px}
+  .grid.hero{grid-template-columns: 1fr}
+  .grid.stats{grid-template-columns:repeat(4,1fr)}
+  .grid.two{grid-template-columns:1fr 1fr}
+  .grid.four{grid-template-columns:repeat(4,1fr)}
+  .card{background:var(--md-surface); border:1px solid var(--md-outline-variant); border-radius:16px; padding:20px; box-shadow:var(--shadow-1)}
+  .card h3{margin:0 0 14px; font-size:16px; font-weight:500; color:var(--md-on-surface); display:flex; align-items:center; gap:8px}
+  .card h3 .dot{width:8px; height:8px; border-radius:50%; background:var(--md-primary)}
+  .gauge-wrap{display:flex; flex-direction:column; align-items:center; justify-content:center; padding:8px}
+  .gauge-wrap svg{width:100%; max-width:400px}
+  .stat{background:var(--md-surface-high); border:1px solid var(--md-outline-variant); border-radius:12px; padding:14px}
+  .stat .k{font:500 12px 'Roboto'; color:var(--md-on-surface-variant); text-transform:none; letter-spacing:.01em}
+  .stat .v{font:400 24px/1.3 'Roboto'; margin-top:4px}
+  .stat .s{font:500 12px 'Roboto'; color:var(--md-on-surface-variant); margin-top:2px}
+  .pos{color:var(--md-success)} .neg{color:var(--md-error)} .warn{color:var(--md-primary)}
+  .row{display:flex; gap:10px; flex-wrap:wrap}
+  .row > *{flex:1; min-width:140px}
+  label{display:block; font:500 12px 'Roboto'; color:var(--md-on-surface-variant); text-transform:none; letter-spacing:.01em; margin-bottom:4px}
+  input,select,textarea{width:100%; background:transparent; border:1px solid var(--md-outline); color:var(--md-on-surface); padding:10px 12px; border-radius:4px; font:400 14px 'Roboto'; outline:none}
+  input:focus,select:focus{border-color:var(--md-primary); border-width:2px; padding:9px 11px}
+  .mono input{font-family:'Roboto Mono',monospace}
+  button.btn{background:var(--md-surface-high); color:var(--md-on-surface); border:1px solid var(--md-outline); padding:10px 20px; border-radius:100px; cursor:pointer; font:500 13px 'Roboto'; letter-spacing:.01em; text-transform:none; transition:.15s; display:inline-flex; align-items:center; gap:6px}
+  button.btn:hover{background:var(--md-surface-highest)}
+  button.btn.primary{background:var(--md-primary-container); color:var(--md-on-primary-container); border-color:transparent}
+  button.btn.primary:hover{filter:brightness(1.1); color:var(--md-on-primary-container)}
+  button.btn.danger{color:var(--md-error); border-color:var(--md-error)}
+  button.btn.danger:hover{background:rgba(255,180,171,.08)}
+  button.btn.ghost{background:transparent; border:1px solid var(--md-outline); color:var(--md-on-surface-variant); padding:6px 14px; font-size:12px}
+  button.btn.small{padding:5px 12px; font-size:12px}
+  button.icon{background:transparent; border:0; color:var(--md-on-surface-variant); cursor:pointer; padding:6px; border-radius:100px; display:inline-flex}
+  button.icon:hover{color:var(--md-primary); background:rgba(255,182,140,.08)}
+  table{width:100%; border-collapse:collapse; font-size:13px}
+  th,td{text-align:left; padding:10px 8px; border-bottom:1px solid var(--md-outline-variant)}
+  th{font:500 12px 'Roboto'; color:var(--md-on-surface-variant); text-transform:none; letter-spacing:.01em}
+  td.amt{font-family:'Roboto Mono',monospace; text-align:right; white-space:nowrap}
+  tr:hover td{background:rgba(255,255,255,.02)}
+  .empty{color:var(--md-on-surface-variant); text-align:center; padding:24px; font-style:italic}
+  .tag{display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:100px; font:500 11px 'Roboto'; letter-spacing:.01em; text-transform:none}
+  .tag.in{background:rgba(161,212,137,.16); color:var(--md-success)}
+  .tag.out{background:rgba(255,180,171,.16); color:var(--md-error)}
+  .tag.transfer{background:rgba(168,200,255,.16); color:var(--md-info)}
+  .tag.settled{background:var(--md-surface-highest); color:var(--md-on-surface-variant)}
+  .tag.pending{background:rgba(255,182,140,.16); color:var(--md-primary)}
+  .tag.approved{background:rgba(168,200,255,.16); color:var(--md-info)}
+  .tag.available{background:rgba(161,212,137,.16); color:var(--md-success)}
+  .section-title{display:flex; align-items:center; justify-content:space-between; margin:24px 0 12px}
+  .section-title h2{margin:0; font-size:22px; font-weight:500; color:var(--md-on-surface)}
+  .section-title .sub{color:var(--md-on-surface-variant); font:400 13px 'Roboto'; text-transform:none; letter-spacing:0}
+  .toolbar{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px}
+  .chip{background:transparent; border:1px solid var(--md-outline); color:var(--md-on-surface-variant); padding:7px 14px; border-radius:100px; font:500 12px 'Roboto'; letter-spacing:.01em; text-transform:none; cursor:pointer}
+  .chip.active{color:var(--md-on-primary-container); background:var(--md-primary-container); border-color:transparent}
+  .month-nav{display:flex; align-items:center; gap:8px}
+  .month-nav .cur{font:500 16px 'Roboto'; color:var(--md-on-surface); min-width:160px; text-align:center}
+  .flip-timeline{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px}
+  .flip-card{background:var(--md-surface-high); border:1px solid var(--md-outline-variant); border-radius:12px; padding:14px; flex:1; min-width:200px}
+  .flip-card .name{font:500 14px 'Roboto'; color:var(--md-on-surface); margin-bottom:4px}
+  .flip-card .stage{font:500 11px 'Roboto'; text-transform:none; letter-spacing:.01em}
+  .flip-card .stage.ordered{color:var(--md-info)}
+  .flip-card .stage.arrived{color:var(--md-primary)}
+  .flip-card .stage.selling{color:var(--md-success)}
+  .flip-card .stage.sold{color:var(--md-on-surface-variant)}
+  .flip-card .nums{font:400 12px 'Roboto Mono'; color:var(--md-on-surface-variant); margin-top:6px}
+  .modal-back{position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; align-items:center; justify-content:center; z-index:100}
+  .modal-back.show{display:flex}
+  .modal{background:var(--md-surface-high); border:1px solid var(--md-outline-variant); border-radius:28px; padding:24px; width:min(520px,92vw); box-shadow:var(--shadow-2); max-height:90vh; overflow-y:auto}
+  .modal h3{margin:0 0 12px}
+  .modal .actions{display:flex; gap:8px; justify-content:flex-end; margin-top:16px}
+  .alert{background:rgba(255,182,140,.12); border:1px solid var(--md-primary-container); color:var(--md-primary); padding:12px 16px; border-radius:12px; margin-bottom:16px; font:400 13px 'Roboto'; display:flex; align-items:center; gap:10px; justify-content:space-between}
+  .alert .alert-text{display:flex; align-items:center; gap:10px}
+  .celebration{background:rgba(161,212,137,.1); border:1px solid var(--md-success); border-radius:16px; padding:16px; text-align:center; margin-bottom:16px}
+  .ledger-footer{display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; margin-top:16px; padding-top:16px; border-top:1px solid var(--md-outline-variant)}
+  .ledger-footer .item{text-align:center}
+  .ledger-footer .item .k{font:500 11px 'Roboto'; color:var(--md-on-surface-variant); text-transform:none; letter-spacing:.01em}
+  .ledger-footer .item .v{font:400 18px 'Roboto'; margin-top:4px}
+  footer{color:var(--md-on-surface-variant); text-align:center; padding:24px; font-size:12px}
+  .ml-badge{display:inline-flex; align-items:center; gap:4px; background:rgba(168,200,255,.14); color:var(--md-info); font:500 11px 'Roboto'; padding:2px 8px; border-radius:100px; margin-left:6px}
+  .ml-badge .material-symbols-outlined{font-size:14px}
+  @media (max-width: 900px){
+    .grid.stats,.grid.four,.grid.two{grid-template-columns:1fr 1fr}
+    header.top{flex-direction:column; gap:10px; align-items:stretch}
+  }
+  @media (max-width: 600px){
+    .grid.stats,.grid.four,.grid.two{grid-template-columns:1fr}
+  }
+
+</style>
+<style id="sc-style">
+
+  #app-study-center{
+    /* Material Design 3 — dark scheme, indigo/violet seed color (distinct from Garage Fund's amber) */
+    --md-bg:#121318; --md-surface:#1b1c23; --md-surface-high:#282a33; --md-surface-highest:#33353f;
+    --md-outline:#46485a; --md-outline-variant:#2f3140;
+    --md-on-surface:#e3e1ec; --md-on-surface-variant:#c5c4d0;
+    --md-primary:#b8c3ff; --md-on-primary:#1a2b6b; --md-primary-container:#324285; --md-on-primary-container:#dde1ff;
+    --md-secondary:#c6c1e9; --md-on-secondary-container:#403c5c;
+    --md-success:#a1d489; --md-on-success-container:#1f3712;
+    --md-error:#ffb4ab; --md-on-error-container:#93000a;
+    --md-info:#8fd4ea; --md-on-info-container:#003640;
+    --shadow-1:0 1px 2px rgba(0,0,0,.5), 0 1px 3px 1px rgba(0,0,0,.35);
+    --shadow-2:0 1px 2px rgba(0,0,0,.5), 0 2px 6px 2px rgba(0,0,0,.35);
+    --bg:var(--md-bg); --panel:var(--md-surface); --panel-2:var(--md-surface-high); --line:var(--md-outline-variant);
+    --ink:var(--md-on-surface); --ink-dim:var(--md-on-surface-variant); --ink-faint:#8f8da1;
+    --violet:var(--md-primary); --violet-hot:var(--md-primary-container); --mint:var(--md-success); --red:var(--md-error); --cyan:var(--md-info);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--md-bg); color:var(--md-on-surface); font:14px/1.45 'Roboto',system-ui,sans-serif; min-height:100vh}
+  h1,h2,h3,.display{font-family:'Roboto',sans-serif; font-weight:500; letter-spacing:0; text-transform:none}
+  .mono{font-family:'Roboto Mono',monospace}
+  .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; font-size:20px; vertical-align:middle; line-height:1; user-select:none}
+  header.top{display:flex; align-items:center; justify-content:space-between; padding:16px 24px; border-bottom:1px solid var(--md-outline-variant); position:sticky; top:0; background:rgba(18,19,24,.92); backdrop-filter:blur(8px); z-index:10}
+  .brand{display:flex; align-items:center; gap:12px}
+  .brand .logo{width:40px; height:40px; border-radius:12px; background:var(--md-primary-container); display:grid; place-items:center; color:var(--md-on-primary-container)}
+  .brand h1{margin:0; font-size:22px; font-weight:500; color:var(--md-on-surface)}
+  .brand small{color:var(--md-on-surface-variant); font-family:'Roboto'; text-transform:none; letter-spacing:0}
+  nav.tabs{display:flex; gap:2px; background:var(--md-surface); padding:4px; border-radius:100px; border:1px solid var(--md-outline-variant); overflow-x:auto}
+  nav.tabs button{background:transparent; border:0; color:var(--md-on-surface-variant); padding:9px 16px; border-radius:100px; cursor:pointer; font:500 13px 'Roboto'; letter-spacing:.01em; text-transform:none; white-space:nowrap; display:flex; align-items:center; gap:6px}
+  nav.tabs button .material-symbols-outlined{font-size:18px}
+  nav.tabs button.active{background:var(--md-primary-container); color:var(--md-on-primary-container)}
+  nav.tabs button:hover:not(.active){color:var(--md-on-surface); background:var(--md-surface-high)}
+  main{max-width:1200px; margin:0 auto; padding:24px}
+  .grid{display:grid; gap:16px}
+  .grid.hero{grid-template-columns: 1fr}
+  .grid.stats{grid-template-columns:repeat(4,1fr)}
+  .grid.two{grid-template-columns:1fr 1fr}
+  .grid.three{grid-template-columns:repeat(3,1fr)}
+  .grid.four{grid-template-columns:repeat(4,1fr)}
+  .grid.five{grid-template-columns:repeat(5,1fr)}
+  .card{background:var(--md-surface); border:1px solid var(--md-outline-variant); border-radius:16px; padding:20px; box-shadow:var(--shadow-1)}
+  .card h3{margin:0 0 14px; font-size:16px; font-weight:500; color:var(--md-on-surface); display:flex; align-items:center; gap:8px}
+  .card h3 .dot{width:8px; height:8px; border-radius:50%; background:var(--md-primary)}
+  .card .card-actions{margin-left:auto; display:flex; gap:6px}
+  .gauge-wrap{display:flex; flex-direction:column; align-items:center; justify-content:center; padding:8px}
+  .gauge-wrap svg{width:100%; max-width:220px}
+  .gauge-label{text-align:center; margin-top:6px}
+  .gauge-label .n{font:400 26px 'Roboto Mono'; }
+  .gauge-label .s{font:500 12px 'Roboto'; color:var(--md-on-surface-variant); margin-top:2px}
+  .stat{background:var(--md-surface-high); border:1px solid var(--md-outline-variant); border-radius:12px; padding:14px}
+  .stat .k{font:500 12px 'Roboto'; color:var(--md-on-surface-variant); text-transform:none; letter-spacing:.01em}
+  .stat .v{font:400 24px/1.3 'Roboto'; margin-top:4px}
+  .stat .s{font:500 12px 'Roboto'; color:var(--md-on-surface-variant); margin-top:2px}
+  .pos{color:var(--md-success)} .neg{color:var(--md-error)} .warn{color:var(--md-primary)} .info{color:var(--md-info)}
+  .row{display:flex; gap:10px; flex-wrap:wrap}
+  .row > *{flex:1; min-width:140px}
+  label{display:block; font:500 12px 'Roboto'; color:var(--md-on-surface-variant); text-transform:none; letter-spacing:.01em; margin-bottom:4px}
+  input,select,textarea{width:100%; background:transparent; border:1px solid var(--md-outline); color:var(--md-on-surface); padding:10px 12px; border-radius:4px; font:400 14px 'Roboto'; outline:none}
+  input:focus,select:focus,textarea:focus{border-color:var(--md-primary); border-width:2px; padding:9px 11px}
+  button.btn{background:var(--md-surface-high); color:var(--md-on-surface); border:1px solid var(--md-outline); padding:10px 20px; border-radius:100px; cursor:pointer; font:500 13px 'Roboto'; letter-spacing:.01em; text-transform:none; transition:.15s; display:inline-flex; align-items:center; gap:6px}
+  button.btn:hover{background:var(--md-surface-highest)}
+  button.btn.primary{background:var(--md-primary-container); color:var(--md-on-primary-container); border-color:transparent}
+  button.btn.primary:hover{filter:brightness(1.15); color:var(--md-on-primary-container)}
+  button.btn.danger{color:var(--md-error); border-color:var(--md-error)}
+  button.btn.danger:hover{background:rgba(255,180,171,.08)}
+  button.btn.ghost{background:transparent; border:1px solid var(--md-outline); color:var(--md-on-surface-variant); padding:6px 14px; font-size:12px}
+  button.btn.small{padding:5px 12px; font-size:12px}
+  button.icon{background:transparent; border:0; color:var(--md-on-surface-variant); cursor:pointer; padding:6px; border-radius:100px; display:inline-flex}
+  button.icon:hover{color:var(--md-primary); background:rgba(184,195,255,.08)}
+  table{width:100%; border-collapse:collapse; font-size:13px}
+  th,td{text-align:left; padding:10px 8px; border-bottom:1px solid var(--md-outline-variant)}
+  th{font:500 12px 'Roboto'; color:var(--md-on-surface-variant); text-transform:none; letter-spacing:.01em}
+  tr:hover td{background:rgba(255,255,255,.02)}
+  .empty{color:var(--md-on-surface-variant); text-align:center; padding:24px; font-style:italic}
+  .tag{display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:100px; font:500 11px 'Roboto'; letter-spacing:.01em; text-transform:none}
+  .tag.done{background:rgba(161,212,137,.16); color:var(--md-success)}
+  .tag.pending{background:rgba(255,255,255,.06); color:var(--md-on-surface-variant)}
+  .tag.cat{background:rgba(184,195,255,.14); color:var(--md-primary)}
+  .section-title{display:flex; align-items:center; justify-content:space-between; margin:24px 0 12px}
+  .section-title h2{margin:0; font-size:22px; font-weight:500; color:var(--md-on-surface)}
+  .section-title .sub{color:var(--md-on-surface-variant); font:400 13px 'Roboto'; text-transform:none; letter-spacing:0}
+  .toolbar{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px}
+  .chip{background:transparent; border:1px solid var(--md-outline); color:var(--md-on-surface-variant); padding:7px 14px; border-radius:100px; font:500 12px 'Roboto'; letter-spacing:.01em; text-transform:none; cursor:pointer}
+  .chip.active{color:var(--md-on-primary-container); background:var(--md-primary-container); border-color:transparent}
+  .progress{height:8px; border-radius:100px; background:var(--md-surface-highest); overflow:hidden}
+  .progress > i{display:block; height:100%; background:var(--md-primary); border-radius:100px}
+  .lesson-row{display:flex; align-items:center; gap:10px; padding:8px 4px; border-bottom:1px solid var(--md-outline-variant)}
+  .lesson-row input[type=checkbox]{width:auto}
+  .lesson-row .name{flex:1}
+  .lesson-row.done .name{color:var(--md-on-surface-variant); text-decoration:line-through}
+  .lesson-row .resume{font-size:11px; color:var(--md-primary)}
+  .todo-row{display:flex; align-items:center; gap:10px; padding:8px 4px; border-bottom:1px solid var(--md-outline-variant)}
+  .todo-row input[type=checkbox]{width:auto}
+  .todo-row .txt{flex:1}
+  .todo-row.done .txt{color:var(--md-on-surface-variant); text-decoration:line-through}
+  .modal-back{position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; align-items:center; justify-content:center; z-index:100}
+  .modal-back.show{display:flex}
+  .modal{background:var(--md-surface-high); border:1px solid var(--md-outline-variant); border-radius:28px; padding:24px; width:min(520px,92vw); box-shadow:var(--shadow-2); max-height:90vh; overflow-y:auto}
+  .modal h3{margin:0 0 12px}
+  .modal .actions{display:flex; gap:8px; justify-content:flex-end; margin-top:16px}
+  .alert{background:rgba(184,195,255,.12); border:1px solid var(--md-primary-container); color:var(--md-primary); padding:12px 16px; border-radius:12px; margin-bottom:16px; font:400 13px 'Roboto'; display:flex; align-items:center; gap:10px; justify-content:space-between}
+  .alert .alert-text{display:flex; align-items:center; gap:10px}
+  .celebration{background:rgba(161,212,137,.1); border:1px solid var(--md-success); border-radius:16px; padding:16px; text-align:center; margin-bottom:16px}
+  .streak-flames{display:flex; gap:4px; flex-wrap:wrap; margin-top:10px}
+  .streak-flames .d{width:22px; height:22px; border-radius:6px; background:var(--md-surface-highest); display:grid; place-items:center; font-size:12px}
+  .streak-flames .d.hit{background:var(--md-primary-container); color:var(--md-on-primary-container)}
+  footer{color:var(--md-on-surface-variant); text-align:center; padding:24px; font-size:12px}
+  a{color:var(--md-primary)}
+  @media(max-width:900px){ .grid.stats,.grid.four,.grid.five{grid-template-columns:repeat(2,1fr)} .grid.two,.grid.three{grid-template-columns:1fr} }
+
+</style>
+</head>
+<body>
+
+<script>
+  // Flip a root class the moment the Material Symbols web font finishes loading
+  // so we can hide the literal ligature names ("directions_car") until then.
+  (function(){
+    var mark = function(){ document.documentElement.classList.add('fonts-ready'); };
+    if (document.fonts && document.fonts.ready && typeof document.fonts.ready.then === 'function') {
+      document.fonts.ready.then(mark);
+    } else {
+      mark();
+    }
+    // Fallback so a total font-load failure never leaves the UI permanently blank.
+    setTimeout(mark, 3000);
+  })();
+</script>
+
+<!-- Historical one-shot seed removed for public repo. First-time visitors get an empty app; restore prior state via Settings -> Import JSON. -->
+
+
+<div class="app-switcher" id="appSwitcher">
+  <span class="sw-label">App</span>
+  <button id="swGarage" class="active gf-active"><span class="material-symbols-outlined">directions_car</span>Garage Fund</button>
+  <button id="swStudy" class="sc-active"><span class="material-symbols-outlined">school</span>Study Command Center</button>
+  <button id="swCalc" class="calc-active"><span class="material-symbols-outlined">calculate</span>Calculator</button>
+</div>
+
+<div id="app-calculator" style="display:none">
+  <header class="top">
+    <div class="brand">
+      <div class="logo"><span class="material-symbols-outlined">calculate</span></div>
+      <div>
+        <h1>Calculator</h1>
+        <small>Basic arithmetic, right in the same file</small>
+      </div>
+    </div>
+  </header>
+  <main style="max-width:420px">
+    <div class="card" style="padding:16px">
+      <div id="calcDisplay">
+        <div id="calcPrevLine">&nbsp;</div>
+        <div id="calcMainLine">0</div>
+      </div>
+      <div id="calcGrid">
+        <button class="calc-btn calc-fn" data-calc="clear">C</button>
+        <button class="calc-btn calc-fn" data-calc="backspace"><span class="material-symbols-outlined">backspace</span></button>
+        <button class="calc-btn calc-fn" data-calc="percent">%</button>
+        <button class="calc-btn calc-op" data-calc="op" data-op="/">÷</button>
+
+        <button class="calc-btn" data-calc="digit" data-digit="7">7</button>
+        <button class="calc-btn" data-calc="digit" data-digit="8">8</button>
+        <button class="calc-btn" data-calc="digit" data-digit="9">9</button>
+        <button class="calc-btn calc-op" data-calc="op" data-op="*">×</button>
+
+        <button class="calc-btn" data-calc="digit" data-digit="4">4</button>
+        <button class="calc-btn" data-calc="digit" data-digit="5">5</button>
+        <button class="calc-btn" data-calc="digit" data-digit="6">6</button>
+        <button class="calc-btn calc-op" data-calc="op" data-op="-">−</button>
+
+        <button class="calc-btn" data-calc="digit" data-digit="1">1</button>
+        <button class="calc-btn" data-calc="digit" data-digit="2">2</button>
+        <button class="calc-btn" data-calc="digit" data-digit="3">3</button>
+        <button class="calc-btn calc-op" data-calc="op" data-op="+">+</button>
+
+        <button class="calc-btn" data-calc="sign">±</button>
+        <button class="calc-btn" data-calc="digit" data-digit="0">0</button>
+        <button class="calc-btn" data-calc="decimal">.</button>
+        <button class="calc-btn calc-eq" data-calc="equals">=</button>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h3 style="margin:0 0 10px; font-size:14px; display:flex; align-items:center; justify-content:space-between">
+        <span>History</span>
+        <button class="btn ghost small" id="calcClearHistory">Clear</button>
+      </h3>
+      <div id="calcHistory"></div>
+    </div>
+  </main>
+  <footer>Calculator · resets each time you close the tab</footer>
+</div>
+
+<div id="app-garage-fund">
+<header class="top">
+  <div class="brand">
+    <div class="logo"><span class="material-symbols-outlined">directions_car</span></div>
+    <div>
+      <h1>Garage Fund</h1>
+      <small>Every dollar, tracked from your pocket to the driveway.</small>
+    </div>
+  </div>
+  <nav class="tabs" id="tabs">
+    <button data-tab="dashboard" class="active"><span class="material-symbols-outlined">space_dashboard</span>Dashboard</button>
+    <button data-tab="ledger"><span class="material-symbols-outlined">receipt_long</span>Ledger</button>
+    <button data-tab="people"><span class="material-symbols-outlined">group</span>People</button>
+    <button data-tab="budgets"><span class="material-symbols-outlined">pie_chart</span>Budgets</button>
+    <button data-tab="flips"><span class="material-symbols-outlined">inventory_2</span>Flips</button>
+    <button data-tab="shein"><span class="material-symbols-outlined">storefront</span>Shein Affiliate</button>
+    <button data-tab="goal"><span class="material-symbols-outlined">flag</span>Car Goal</button>
+    <button data-tab="settings"><span class="material-symbols-outlined">settings</span>Settings</button>
+  </nav>
+</header>
+
+<main>
+  <section id="view-dashboard">
+    <div id="backupNag" class="alert" hidden>
+      <span class="alert-text"><span class="material-symbols-outlined">cloud_off</span> Your data lives only in this browser. It's been over 30 days since your last export — back it up now.</span>
+      <button class="btn small primary" id="backupNagExport">Export JSON</button>
+    </div>
+    <div id="celebrationBanner" class="celebration" hidden>
+      <h3 style="margin:0; color:var(--mint); font-size:18px"><span class="material-symbols-outlined">celebration</span> Goal Reached! <span class="material-symbols-outlined">celebration</span></h3>
+      <p style="margin:4px 0 0; color:var(--ink-dim)">You've fully funded your car. Time to hit the dealership!</p>
+    </div>
+    
+    <div class="grid hero">
+      <div class="card">
+        <h3><span class="dot"></span><span class="material-symbols-outlined">directions_car</span> Car Fund Progress</h3>
+        <div class="gauge-wrap" id="gaugeWrap"></div>
+        <div class="grid stats" id="carFundStats" style="grid-template-columns:repeat(3,1fr); margin-top:12px"></div>
+      </div>
+    </div>
+
+    <div class="grid four" style="margin-top:18px">
+      <div class="card">
+        <h3><span class="dot"></span><span class="material-symbols-outlined">payments</span> Money</h3>
+        <div id="moneyStats"></div>
+      </div>
+      <div class="card">
+        <h3><span class="dot"></span><span class="material-symbols-outlined">inventory_2</span> Flip Business</h3>
+        <div id="flipStats"></div>
+      </div>
+      <div class="card">
+        <h3><span class="dot"></span><span class="material-symbols-outlined">insights</span> Forecast</h3>
+        <div id="forecastStats"></div>
+      </div>
+      <div class="card">
+        <h3><span class="dot"></span><span class="material-symbols-outlined">bolt</span> Quick Actions</h3>
+        <div class="row" style="flex-direction:column">
+          <button class="btn primary" onclick="document.querySelector('[data-tab=ledger]').click()">+ Log Transaction</button>
+          <button class="btn" id="quickAffiliateBtn">+ Log Affiliate Income</button>
+          <button class="btn" onclick="document.querySelector('[data-tab=flips]').click()">+ Add Flip</button>
+          <button class="btn" id="processRecurringBtn" hidden style="border-color:var(--amber); color:var(--amber)"><span class="material-symbols-outlined">warning</span> Process Recurring</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <h3><span class="dot"></span><span class="material-symbols-outlined">auto_graph</span> Smart Forecast<span class="ml-badge"><span class="material-symbols-outlined">psychology</span>ML</span></h3>
+      <div id="mlForecast"></div>
+    </div>
+
+    <div class="section-title"><h2>Recent activity</h2></div>
+    <div class="card" id="recentCard"><div class="empty">Nothing logged yet.</div></div>
+  </section>
+
+  <section id="view-ledger" hidden>
+    <div class="section-title"><h2>Ledger</h2><span class="sub">Income, expenses, and transfers</span></div>
+    <div id="recurringAlert" class="alert" hidden>
+      <span class="alert-text"><span class="material-symbols-outlined">warning</span> You have recurring transactions due. Process them to keep your ledger up to date.</span>
+      <button class="btn small primary" id="processRecurringInline">Process Now</button>
+    </div>
+    <div class="card">
+      <h3><span class="dot"></span><span id="txFormTitle">Log a transaction</span></h3>
+      <form id="txForm">
+        <input type="hidden" name="editId" value="">
+        <div class="row">
+          <div><label>Type</label><select name="type"><option value="expense">Expense</option><option value="income">Income</option></select></div>
+          <div><label>Date</label><input name="date" type="date" required></div>
+          <div><label>Category</label><input name="category" placeholder="Food, Fuel, Salary…" required></div>
+          <div class="mono"><label>Amount (USD)</label><input name="amount" type="number" step="0.01" min="0" required></div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <div><label>Note</label><input name="note" placeholder="Optional"></div>
+          <div><label>Recurring</label><select name="recurring"><option value="">None</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select></div>
+          <div style="display:flex; align-items:flex-end; gap:8px">
+            <button class="btn primary" type="submit" id="txSubmitBtn">Add transaction</button>
+            <button class="btn ghost" type="button" id="txCancelBtn" hidden>Cancel Edit</button>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="toolbar" style="margin-top:16px">
+      <button class="chip active" data-filter="all">All</button>
+      <button class="chip" data-filter="income">Income</button>
+      <button class="chip" data-filter="expense">Expenses</button>
+    </div>
+    <div class="card" id="ledgerCard"></div>
+  </section>
+
+  <section id="view-people" hidden>
+    <div class="section-title"><h2>People</h2><span class="sub">Who owes you, and who you owe</span></div>
+    <div class="card">
+      <h3><span class="dot"></span><span id="debtFormTitle">Add a debt</span></h3>
+      <form id="debtForm">
+        <input type="hidden" name="editId" value="">
+        <div class="row">
+          <div><label>Direction</label><select name="dir"><option value="owed">Owed to me</option><option value="owe">I owe</option></select></div>
+          <div><label>Person</label><input name="person" required></div>
+          <div class="mono"><label>Amount (USD)</label><input name="amount" type="number" step="0.01" min="0" required></div>
+          <div><label>Date lent/borrowed</label><input name="date" type="date" required></div>
+          <div><label>Expected payment date</label><input name="dueDate" type="date"></div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <div><label>Note</label><input name="note"></div>
+          <div style="display:flex; align-items:flex-end; gap:8px">
+            <button class="btn primary" type="submit" id="debtSubmitBtn">Add</button>
+            <button class="btn ghost" type="button" id="debtCancelBtn" hidden>Cancel Edit</button>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="grid two" style="margin-top:16px">
+      <div class="card">
+        <h3><span class="dot"></span>Owed to me</h3>
+        <div id="owedToMe"></div>
+      </div>
+      <div class="card">
+        <h3><span class="dot"></span>I owe</h3>
+        <div id="iOwe"></div>
+      </div>
+    </div>
+    <div style="margin-top:10px"><label><input type="checkbox" id="showSettled"> Show settled debts</label></div>
+  </section>
+
+  <section id="view-budgets" hidden>
+    <div class="section-title">
+      <h2>Budgets</h2>
+      <div class="month-nav">
+        <button class="btn" id="prevMonth">◀</button>
+        <div class="cur mono" id="curMonth"></div>
+        <button class="btn" id="nextMonth">▶</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3><span class="dot"></span>Set a budget line</h3>
+      <form id="budgetForm">
+        <input type="hidden" name="editId" value="">
+        <div class="row">
+          <div><label>Category</label><input name="category" required></div>
+          <div class="mono"><label>Planned amount (USD)</label><input name="planned" type="number" step="0.01" min="0" required></div>
+          <div style="display:flex; align-items:flex-end; gap:8px">
+            <button class="btn primary" type="submit" id="budgetSubmitBtn">Save</button>
+            <button class="btn ghost" type="button" id="budgetCancelBtn" hidden>Cancel</button>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h3><span class="dot"></span>Planned vs. actual</h3>
+      <div id="budgetTable"></div>
+    </div>
+  </section>
+
+  <section id="view-flips" hidden>
+    <div class="section-title"><h2>Flips</h2><span class="sub">Buy → receive → sell</span></div>
+    <div class="card">
+      <h3><span class="dot"></span><span id="flipFormTitle">Add a flip</span></h3>
+      <form id="flipForm">
+        <input type="hidden" name="editId" value="">
+        <div class="row">
+          <div><label>Item</label><input name="item" required></div>
+          <div class="mono"><label>Quantity</label><input name="quantity" type="number" min="1" value="1" required></div>
+          <div class="mono"><label>Unit Cost (USD)</label><input name="unitCost" type="number" step="0.01" min="0" required></div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <div class="mono"><label>Shipping (USD)</label><input name="shipping" type="number" step="0.01" min="0" value="0"></div>
+          <div class="mono"><label>Other Costs (USD)</label><input name="otherCosts" type="number" step="0.01" min="0" value="0"></div>
+          <div><label>Order Date</label><input name="orderDate" type="date" required></div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <div><label>Expected Arrival</label><input name="expectedArrival" type="date"></div>
+          <div><label>Actual Arrival</label><input name="actualArrival" type="date"></div>
+          <div class="mono"><label>Target Unit Price (USD)</label><input name="targetPrice" type="number" step="0.01" min="0"></div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <div style="display:flex; align-items:center; gap:8px">
+            <input type="checkbox" name="autoExpense" checked style="width:auto">
+            <label style="margin:0; text-transform:none; letter-spacing:0; font:500 13px 'Inter'; color:var(--ink-dim)">Auto-record total cost as Ledger expense</label>
+          </div>
+          <div style="display:flex; align-items:flex-end; gap:8px; margin-left:auto">
+            <button class="btn primary" type="submit" id="flipSubmitBtn">Add flip</button>
+            <button class="btn ghost" type="button" id="flipCancelBtn" hidden>Cancel Edit</button>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h3><span class="dot"></span>Flip pipeline</h3>
+      <div class="flip-timeline" id="flipTimeline"></div>
+    </div>
+    <div class="grid two" style="margin-top:16px">
+      <div class="card">
+        <h3><span class="dot"></span>Project a flip</h3>
+        <form id="projectForm">
+          <div class="row">
+            <div class="mono"><label>Cost</label><input name="cost" type="number" step="0.01" min="0" required></div>
+            <div class="mono"><label>Sell price</label><input name="price" type="number" step="0.01" min="0" required></div>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <div><label>Lead time (days)</label><input name="lead" type="number" min="0"></div>
+            <div><label>Time to sell (days)</label><input name="tts" type="number" min="0"></div>
+            <div style="display:flex; align-items:flex-end"><button class="btn primary" type="submit">Project</button></div>
+          </div>
+        </form>
+        <div id="projectResult" style="margin-top:12px; font:500 13px 'Inter'; color:var(--ink-dim)"></div>
+      </div>
+      <div class="card">
+        <h3><span class="dot"></span>How to use flips</h3>
+        <p style="color:var(--ink-dim); font-size:13px; margin:0">
+          1. Add a flip with quantity and costs. It will auto-create a ledger expense.<br>
+          2. Click "Record Sale" on the flip card when you sell units.<br>
+          3. The sale auto-creates a ledger income and calculates true profit based on average unit cost.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-shein" hidden>
+    <div class="section-title"><h2>Shein Affiliate</h2><span class="sub">Commissions in Rand — ~45 days approval, then a few days to hit your bank</span></div>
+    <div class="grid four">
+      <div class="stat"><div class="k">Total Logged</div><div class="v" id="sheinTotalLogged"></div></div>
+      <div class="stat"><div class="k">Pending Approval</div><div class="v warn" id="sheinPending"></div></div>
+      <div class="stat"><div class="k">Available for Payout</div><div class="v pos" id="sheinAvailable"></div></div>
+      <div class="stat"><div class="k">Paid Out (USD, in Car Fund)</div><div class="v pos" id="sheinPaidTotal"></div></div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h3><span class="dot"></span>Log a commission</h3>
+      <form id="sheinForm">
+        <div class="row">
+          <div><label>Date earned</label><input name="date" type="date" required></div>
+          <div class="mono"><label>Amount (ZAR)</label><input name="amount" type="number" step="0.01" min="0" required></div>
+          <div><label>Note</label><input name="note" placeholder="Optional"></div>
+          <div style="display:flex; align-items:flex-end"><button class="btn primary" type="submit">Add</button></div>
+        </div>
+      </form>
+    </div>
+    <div class="card" style="margin-top:16px" id="sheinCard"></div>
+  </section>
+
+  <section id="view-goal" hidden>
+    <div id="goalCelebrationBanner" class="celebration" hidden>
+      <h3 style="margin:0; color:var(--mint); font-size:18px"><span class="material-symbols-outlined">celebration</span> Goal Reached! <span class="material-symbols-outlined">celebration</span></h3>
+      <p style="margin:4px 0 0; color:var(--ink-dim)">You've fully funded your car. Time to hit the dealership!</p>
+    </div>
+    <div class="section-title"><h2>Car Goal</h2><span class="sub">The target</span></div>
+    <div class="card">
+      <form id="goalForm">
+        <div class="row">
+          <div><label>What you're saving for</label><input name="label" placeholder="e.g. 2008 Honda Civic"></div>
+          <div class="mono"><label>Target amount (USD)</label><input name="target" type="number" step="0.01" min="0" required></div>
+          <div><label>Deadline</label><input name="deadline" type="date" required></div>
+          <div style="display:flex; align-items:flex-end"><button class="btn primary" type="submit">Save goal</button></div>
+        </div>
+      </form>
+    </div>
+    <div class="grid two" style="margin-top:16px">
+      <div class="card">
+        <h3><span class="dot"></span><span class="material-symbols-outlined">trending_up</span> Pace check</h3>
+        <div id="paceCheck"></div>
+      </div>
+      <div class="card">
+        <h3><span class="dot"></span><span class="material-symbols-outlined">account_balance_wallet</span> Car Fund vs Net Position</h3>
+        <div id="netBreakdown"></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h3><span class="dot"></span><span class="material-symbols-outlined">auto_graph</span> Smart Forecast<span class="ml-badge"><span class="material-symbols-outlined">psychology</span>ML</span></h3>
+      <div id="mlForecastGoal"></div>
+    </div>
+  </section>
+
+  <section id="view-settings" hidden>
+    <div class="section-title"><h2>Settings</h2></div>
+    <div class="card">
+      <h3><span class="dot"></span>Starting Balance</h3>
+      <p style="color:var(--ink-dim); margin:0 0 12px">Money you already had saved before you started using this app. It's added straight into your Car Fund, on top of whatever your logged income/expenses add up to.</p>
+      <div class="row">
+        <div class="mono"><label>Starting Balance (USD)</label><input id="openingBalanceInput" type="number" step="0.01" min="0"></div>
+        <div style="display:flex; align-items:flex-end"><button class="btn primary" id="saveOpeningBalanceBtn">Save</button></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3><span class="dot"></span>Data & Schema</h3>
+      <p style="color:var(--ink-dim); margin:0 0 12px">Schema Version: <span class="mono" id="schemaVersionDisplay">6.0</span>. Everything is stored locally. Export regularly.</p>
+      <div class="row">
+        <button class="btn" id="exportBtn">Export JSON</button>
+        <button class="btn" id="importBtn">Import JSON</button>
+        <input type="file" id="importFile" accept="application/json" hidden>
+        <button class="btn danger" id="clearBtn">Clear all data</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>Garage Fund v6.0 · localStorage only · nothing leaves this browser</footer>
+
+<!-- MODALS -->
+<div class="modal-back" id="modal">
+  <div class="modal">
+    <h3 id="modalTitle">Confirm</h3>
+    <div id="modalBody" style="color:var(--ink-dim)"></div>
+    <div class="actions">
+      <button class="btn" id="modalCancel">Cancel</button>
+      <button class="btn danger" id="modalOk">OK</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-back" id="saleModal">
+  <div class="modal">
+    <h3>Record a Sale</h3>
+    <form id="saleForm">
+      <input type="hidden" name="flipId" value="">
+      <div class="row">
+        <div><label>Date</label><input name="date" type="date" required></div>
+        <div class="mono"><label>Quantity Sold</label><input name="qty" type="number" min="1" required></div>
+        <div class="mono"><label>Unit Price (USD)</label><input name="price" type="number" step="0.01" min="0" required></div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div style="display:flex; align-items:center; gap:8px">
+          <input type="checkbox" name="autoIncome" checked style="width:auto">
+          <label style="margin:0; text-transform:none; letter-spacing:0; font:500 13px 'Inter'; color:var(--ink-dim)">Auto-record as Ledger income</label>
+        </div>
+      </div>
+      <div class="actions" style="margin-top:16px">
+        <button class="btn" type="button" id="saleCancel">Cancel</button>
+        <button class="btn primary" type="submit">Record Sale</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-back" id="settleModal">
+  <div class="modal">
+    <h3>Settle Debt</h3>
+    <form id="settleForm">
+      <input type="hidden" name="debtId" value="">
+      <div class="row">
+        <div class="mono"><label>Settlement Amount (USD)</label><input name="amount" type="number" step="0.01" min="0" required></div>
+        <div><label>Date</label><input name="date" type="date" required></div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div style="display:flex; align-items:center; gap:8px">
+          <input type="checkbox" name="autoLedger" checked style="width:auto">
+          <label style="margin:0; text-transform:none; letter-spacing:0; font:500 13px 'Inter'; color:var(--ink-dim)">Record this payment in Ledger</label>
+        </div>
+      </div>
+      <div class="actions" style="margin-top:16px">
+        <button class="btn" type="button" id="settleCancel">Cancel</button>
+        <button class="btn primary" type="submit">Settle</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+</div><!-- /#app-garage-fund -->
+
+
+<div id="app-study-center" style="display:none">
+<header class="top">
+  <div class="brand">
+    <div class="logo"><span class="material-symbols-outlined">school</span></div>
+    <div>
+      <h1>Study Command Center</h1>
+      <small>PMP · PTE Academic · CODESYS · Daily Reading</small>
+    </div>
+  </div>
+  <nav class="tabs" id="scTabs">
+    <button data-tab="dashboard" class="active"><span class="material-symbols-outlined">dashboard</span>Dashboard</button>
+    <button data-tab="pmp"><span class="material-symbols-outlined">military_tech</span>PMP</button>
+    <button data-tab="pte"><span class="material-symbols-outlined">translate</span>PTE Academic</button>
+    <button data-tab="codesys"><span class="material-symbols-outlined">memory</span>CODESYS</button>
+    <button data-tab="bible"><span class="material-symbols-outlined">auto_stories</span>Bible</button>
+    <button data-tab="reading"><span class="material-symbols-outlined">menu_book</span>Reading</button>
+    <button data-tab="todo"><span class="material-symbols-outlined">checklist</span>To-Do</button>
+    <button data-tab="settings"><span class="material-symbols-outlined">settings</span>Settings</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ============ DASHBOARD ============ -->
+  <section id="view-sc-dashboard">
+    <div id="dashAlerts"></div>
+    <div class="grid five" id="examGauges"></div>
+    <div class="grid three" style="margin-top:16px">
+      <div class="card">
+        <h3><span class="dot"></span>CODESYS Progress</h3>
+        <div id="dashCodesys"></div>
+      </div>
+      <div class="card">
+        <h3><span class="dot"></span>Bible Progress</h3>
+        <div id="dashBible"></div>
+      </div>
+      <div class="card">
+        <h3><span class="dot"></span>Reading Streak</h3>
+        <div id="dashReading"></div>
+      </div>
+    </div>
+    <div class="section-title"><h2>Today's To-Do</h2><span class="sub" id="dashTodoSub"></span></div>
+    <div class="card">
+      <div class="toolbar">
+        <input id="dashTodoQuickAdd" placeholder="Add a task and hit Enter…" style="max-width:360px"/>
+      </div>
+      <div id="dashTodoList"></div>
+    </div>
+  </section>
+
+  <!-- ============ PMP ============ -->
+  <section id="view-sc-pmp" style="display:none">
+    <div class="section-title"><h2>PMP</h2><span class="sub">Target date and prep milestones</span></div>
+    <div class="grid two">
+      <div class="card">
+        <h3><span class="dot"></span>Progress</h3>
+        <div id="pmpProgress"></div>
+      </div>
+      <div class="card">
+        <h3><span class="dot"></span>Target Exam Date</h3>
+        <div class="row">
+          <div><input type="date" data-exam-date="pmp" id="pmpDateInput"/></div>
+        </div>
+        <label style="margin-top:14px">Notes</label>
+        <textarea rows="3" data-exam-notes="pmp" id="pmpNotes"></textarea>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h3><span class="dot"></span>Milestones</h3>
+      <div id="pmpMilestoneList"></div>
+      <div class="row" style="margin-top:10px">
+        <input data-exam-newmilestone="pmp" placeholder="Add a milestone…"/>
+        <button class="btn ghost small" data-exam-addmilestone="pmp" style="flex:0 0 auto; min-width:auto"><span class="material-symbols-outlined">add</span></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PTE ACADEMIC ============ -->
+  <section id="view-sc-pte" style="display:none">
+    <div class="section-title"><h2>PTE Academic</h2><span class="sub">Target date and prep milestones</span></div>
+    <div class="grid two">
+      <div class="card">
+        <h3><span class="dot"></span>Progress</h3>
+        <div id="pteProgress"></div>
+      </div>
+      <div class="card">
+        <h3><span class="dot"></span>Target Exam Date</h3>
+        <div class="row">
+          <div><input type="date" data-exam-date="pte" id="pteDateInput"/></div>
+        </div>
+        <label style="margin-top:14px">Notes</label>
+        <textarea rows="3" data-exam-notes="pte" id="pteNotes"></textarea>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h3><span class="dot"></span>Milestones</h3>
+      <div id="pteMilestoneList"></div>
+      <div class="row" style="margin-top:10px">
+        <input data-exam-newmilestone="pte" placeholder="Add a milestone…"/>
+        <button class="btn ghost small" data-exam-addmilestone="pte" style="flex:0 0 auto; min-width:auto"><span class="material-symbols-outlined">add</span></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CODESYS ============ -->
+  <section id="view-sc-codesys" style="display:none">
+    <div class="section-title">
+      <h2>CODESYS Course</h2>
+      <span class="sub">YouTube playlist · <a id="codesysPlaylistLink" href="#" target="_blank" rel="noopener">open playlist</a></span>
+    </div>
+    <div class="grid two">
+      <div class="card">
+        <h3><span class="dot"></span>Overall Progress</h3>
+        <div id="codesysProgress"></div>
+      </div>
+      <div class="card">
+        <h3><span class="dot"></span>Add / Manage Lessons</h3>
+        <div class="row">
+          <div><label>New lesson name</label><input id="codesysNewLessonName" placeholder="e.g. Lesson 30 — Function Blocks"/></div>
+        </div>
+        <div style="margin-top:8px"><button class="btn primary small" id="codesysAddLesson"><span class="material-symbols-outlined">add</span>Add Lesson</button></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h3><span class="dot"></span>Lessons</h3>
+      <div id="codesysLessonList"></div>
+    </div>
+  </section>
+
+  <!-- ============ BIBLE ============ -->
+  <section id="view-sc-bible" style="display:none">
+    <div class="section-title"><h2>Bible Reading Plan</h2><span class="sub">Straight through, Genesis to Revelation — at your own pace</span></div>
+    <div class="grid two">
+      <div class="card">
+        <h3><span class="dot"></span>Today's Chapter</h3>
+        <div id="bibleTodayBox"></div>
+      </div>
+      <div class="card">
+        <h3><span class="dot"></span>Progress &amp; Pace</h3>
+        <div id="bibleProgressBox"></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h3><span class="dot"></span>Recently Read</h3>
+      <div id="bibleLogTable"></div>
+    </div>
+  </section>
+
+  <!-- ============ READING ============ -->
+  <section id="view-sc-reading" style="display:none">
+    <div class="section-title"><h2>Reading</h2><span class="sub">One page a day beats zero pages a day</span></div>
+
+    <div class="section-title" style="margin-top:0"><h2>Current Book</h2><span class="sub">Whatever else you're reading right now</span></div>
+    <div class="grid two">
+      <div class="card">
+        <h3><span class="dot"></span>Current Book</h3>
+        <div class="row">
+          <div><label>Title</label><input id="readingCurrentBook"/></div>
+        </div>
+        <div style="margin-top:10px"><button class="btn ghost small" id="readingSaveBook">Save</button></div>
+        <hr style="border-color:var(--md-outline-variant); margin:16px 0">
+        <label>Log today</label>
+        <div class="row">
+          <div><input id="readingMinutes" type="number" min="0" placeholder="Minutes read"/></div>
+          <div><input id="readingNote" placeholder="One-line takeaway (optional)"/></div>
+        </div>
+        <div style="margin-top:10px"><button class="btn primary small" id="readingLogToday"><span class="material-symbols-outlined">check</span>Log Today's Reading</button></div>
+      </div>
+      <div class="card">
+        <h3><span class="dot"></span>Streak</h3>
+        <div id="readingStreakBox"></div>
+      </div>
+    </div>
+    <div class="grid two" style="margin-top:16px">
+      <div class="card">
+        <h3><span class="dot"></span>Reading Log</h3>
+        <div id="readingLogTable"></div>
+      </div>
+      <div class="card">
+        <h3><span class="dot"></span>Up Next Shelf</h3>
+        <div class="row">
+          <div><input id="shelfNewTitle" placeholder="Add a book to the queue…"/></div>
+        </div>
+        <div style="margin-top:8px"><button class="btn ghost small" id="shelfAdd"><span class="material-symbols-outlined">add</span>Add</button></div>
+        <div id="shelfList" style="margin-top:12px"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TO-DO ============ -->
+  <section id="view-sc-todo" style="display:none">
+    <div class="section-title"><h2>To-Do</h2><span class="sub">Everything on your plate, sorted by area</span></div>
+    <div class="card">
+      <div class="row">
+        <div style="flex:2"><input id="todoNewText" placeholder="Add a task…"/></div>
+        <div>
+          <select id="todoNewCategory"></select>
+        </div>
+        <div style="flex:0 0 auto; min-width:auto">
+          <button class="btn primary" id="todoAddBtn"><span class="material-symbols-outlined">add</span>Add</button>
+        </div>
+      </div>
+      <div class="toolbar" style="margin-top:14px">
+        <input id="todoNewCategoryName" placeholder="New area name (e.g. Work, Hobbies)…" style="max-width:240px"/>
+        <button class="btn ghost small" id="todoAddCategory">Add Area</button>
+      </div>
+    </div>
+    <div id="todoByCategory" style="margin-top:16px"></div>
+  </section>
+
+  <!-- ============ SETTINGS ============ -->
+  <section id="view-sc-settings" style="display:none">
+    <div class="section-title"><h2>Settings</h2><span class="sub">Backup, restore, and reset</span></div>
+    <div class="grid two">
+      <div class="card">
+        <h3><span class="dot"></span>Backup</h3>
+        <p style="color:var(--md-on-surface-variant)">Everything is stored locally in this browser. Export a backup regularly, especially before clearing browser data.</p>
+        <div class="row">
+          <button class="btn" id="scExportBtn"><span class="material-symbols-outlined">download</span>Export JSON</button>
+          <button class="btn" id="scImportBtn"><span class="material-symbols-outlined">upload</span>Import JSON</button>
+        </div>
+        <input type="file" id="scImportFile" accept="application/json" style="display:none">
+      </div>
+      <div class="card">
+        <h3><span class="dot"></span>Danger Zone</h3>
+        <p style="color:var(--md-on-surface-variant)">This wipes exams, CODESYS progress, reading logs, and to-dos.</p>
+        <button class="btn danger" id="scClearBtn"><span class="material-symbols-outlined">delete</span>Clear All Data</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>Study Command Center · data lives in this browser only (localStorage) · export regularly</footer>
+
+<div class="modal-back" id="scModalBack">
+  <div class="modal">
+    <h3 id="scModalTitle">Confirm</h3>
+    <p id="scModalBody" style="color:var(--md-on-surface-variant)"></p>
+    <div class="actions">
+      <button class="btn ghost" id="scModalCancel">Cancel</button>
+      <button class="btn primary" id="scModalOk">OK</button>
+    </div>
+  </div>
+</div>
+
+
+</div><!-- /#app-study-center -->
+
+
+<script>
+/* ============================================================
+   GARAGE FUND v5.1 — Patched & Robust Accounting Model
+   ============================================================ */
+
+const Utils = (() => {
+  const todayISO = () => {
+    const d = new Date();
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  };
+  const toCents = n => {
+    if (n === '' || n === null || n === undefined) return 0;
+    return Math.round(parseFloat(n) * 100);
+  };
+  const fromCents = c => (c / 100);
+  const fmt = c => '$' + fromCents(c).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  const fmtZAR = c => 'R' + fromCents(c).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  const fmtDays = d => isFinite(d) ? Math.round(d) + ' days' : '—';
+  
+  const daysBetween = (dateStr1, dateStr2) => {
+    if (!dateStr1 || !dateStr2) return null;
+    const d1 = new Date(dateStr1 + 'T00:00:00');
+    const d2 = new Date(dateStr2 + 'T00:00:00');
+    if (isNaN(d1) || isNaN(d2)) return null;
+    return Math.round((d2 - d1) / 86400000);
+  };
+  
+  const parseDate = s => { 
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
+    const d = new Date(s + 'T00:00:00'); 
+    return isNaN(d) ? null : d; 
+  };
+  const monthKey = dateStr => {
+    if (!dateStr || dateStr.length < 7) return '';
+    return dateStr.slice(0, 7);
+  };
+  const monthLabel = key => {
+    const [y, m] = key.split('-');
+    return new Date(+y, +m - 1, 1).toLocaleString('en-US', {month: 'long', year: 'numeric'});
+  };
+  const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+  return { todayISO, toCents, fromCents, fmt, fmtZAR, fmtDays, daysBetween, parseDate, monthKey, monthLabel, uid };
+})();
+
+const Storage = (() => {
+  const KEY = 'garageFund.v5.1';
+  
+  const migrate = (data) => {
+    let out = data;
+    let v = out.schemaVersion || 1;
+
+    if (v < 5.1) {
+      out = { ...out, schemaVersion: 5.1 };
+      out.debts = (out.debts || []).map(d => ({
+        ...d,
+        originalAmountCents: d.originalAmountCents || d.amountCents,
+        remainingAmountCents: d.settled ? 0 : (d.remainingAmountCents || d.amountCents)
+      }));
+      out.flips = (out.flips || []).map(f => {
+        const sales = [];
+        if (f.soldDate && f.soldCents !== undefined) {
+          sales.push({ id: Utils.uid(), date: f.soldDate, quantity: 1, unitPriceCents: f.soldCents, note: 'Migrated sale' });
+        }
+        return {
+          id: f.id,
+          item: f.item || 'Unknown',
+          quantity: f.quantity || 1,
+          unitCostCents: f.unitCostCents || f.costCents || 0,
+          shippingCents: f.shippingCents || 0,
+          otherCostsCents: f.otherCostsCents || 0,
+          orderDate: f.orderDate || Utils.todayISO(),
+          expectedArrival: f.expectedArrival || '',
+          actualArrival: f.actualArrival || '',
+          targetUnitPriceCents: f.targetUnitPriceCents || f.targetCents || 0,
+          sales: sales,
+          status: f.status || (sales.length > 0 ? 'selling' : 'ordered')
+        };
+      });
+      v = 5.1;
+    }
+
+    // FIX #8: give every debt a payments[] history so "Reopen" can undo the last
+    // settlement instead of wiping the debt back to its full original amount.
+    if (v < 5.2) {
+      out = { ...out, schemaVersion: 5.2 };
+      out.debts = (out.debts || []).map(d => ({ ...d, payments: d.payments || [] }));
+      v = 5.2;
+    }
+
+    // FIX #13: transfers are now bidirectional (transfer_in / transfer_out) instead
+    // of a single one-way type — convert any existing transfers to "in" so they
+    // keep counting toward the Car Fund exactly as they did before.
+    if (v < 5.3) {
+      out = { ...out, schemaVersion: 5.3 };
+      out.transactions = (out.transactions || []).map(t =>
+        t.type === 'transfer' ? { ...t, type: 'transfer_in' } : t
+      );
+      v = 5.3;
+    }
+
+    // FIX #16: give every debt an (optional) expected payment date field.
+    if (v < 5.4) {
+      out = { ...out, schemaVersion: 5.4 };
+      out.debts = (out.debts || []).map(d => ({ ...d, dueDate: d.dueDate || '' }));
+      v = 5.4;
+    }
+
+    // FIX #18: a starting balance for savings the user already had before using
+    // this app, folded straight into the Car Fund.
+    if (v < 5.5) {
+      out = { ...out, schemaVersion: 5.5, openingBalanceCents: out.openingBalanceCents || 0 };
+      v = 5.5;
+    }
+
+    return out;
+  };
+
+  const load = () => {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+      return migrate(parsed);
+    } catch (e) {
+      console.warn('State load failed, using defaults', e);
+      return null;
+    }
+  };
+  
+  const save = data => {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(data));
+    } catch (e) {
+      if (e.name === 'QuotaExceededError' || e.code === 22) {
+        alert('Warning: LocalStorage is full! Please export your data and clear old entries.');
+      }
+    }
+  };
+  const clear = () => localStorage.removeItem(KEY);
+  return { load, save, clear };
+})();
+
+const Store = (() => {
+  const defaults = {
+    schemaVersion: 5.5,
+    goal: { label: 'Car fund', targetCents: Utils.toCents(7000), deadline: '2026-10-31' },
+    openingBalanceCents: 0,
+    transactions: [],
+    debts: [],
+    budgets: [],
+    flips: [],
+    sheinEarnings: [],
+    ui: { tab: 'dashboard', ledgerFilter: 'all', budgetMonth: Utils.monthKey(Utils.todayISO()), showSettled: false }
+  };
+  
+  let state = { ...defaults };
+  const loaded = Storage.load();
+  if (loaded) {
+    state = { ...defaults, ...loaded };
+    state.goal = { ...defaults.goal, ...(loaded.goal || {}) };
+    state.ui = { ...defaults.ui, ...(loaded.ui || {}) };
+  }
+  
+  const persist = () => Storage.save(state);
+  const get = () => state;
+  const set = patch => { state = { ...state, ...patch }; persist(); };
+  const add = (coll, item) => { state[coll] = [...state[coll], item]; persist(); };
+  const update = (coll, id, patch) => {
+    state[coll] = state[coll].map(x => x.id === id ? { ...x, ...patch } : x);
+    persist();
+  };
+  const remove = (coll, id) => { state[coll] = state[coll].filter(x => x.id !== id); persist(); };
+  return { get, set, add, update, remove, persist };
+})();
+
+const Accounting = (() => {
+  const getBalances = () => {
+    const s = Store.get();
+    
+    // FIX #14/#18: single-pot model, per your workflow — every income adds directly
+    // to the fund, every expense (rent, etc.) subtracts from it directly, and any
+    // starting balance you had saved before using this app is added on top.
+    const carFundCents = (s.openingBalanceCents || 0) + s.transactions.reduce((acc, t) => {
+      if (t.type === 'income' || t.type === 'transfer_in') return acc + t.amountCents;
+      if (t.type === 'expense' || t.type === 'transfer_out') return acc - t.amountCents;
+      return acc;
+    }, 0);
+
+    const owedToMe = s.debts.filter(d => d.dir === 'owed' && d.remainingAmountCents > 0).reduce((acc, d) => acc + d.remainingAmountCents, 0);
+    // FIX #22: running total for a specific recurring income source you check
+    // daily, matched by category name (case/whitespace-insensitive).
+    const affiliateEarningsCents = s.transactions
+      .filter(t => t.type === 'income' && (t.category || '').trim().toLowerCase() === 'shein affiliate')
+      .reduce((acc, t) => acc + t.amountCents, 0);
+    const iOwe = s.debts.filter(d => d.dir === 'owe' && d.remainingAmountCents > 0).reduce((acc, d) => acc + d.remainingAmountCents, 0);
+
+    // FIX #17: expected debt settlements due on or before the goal deadline count
+    // toward the projection — money coming in from "owed to me" adds, money going
+    // out to settle "I owe" subtracts. Debts with no due date, or one past the
+    // deadline, aren't assumed to land in time, so they're left out.
+    const deadline = s.goal.deadline;
+    const expectedDebtNet = s.debts.reduce((acc, d) => {
+      if (d.remainingAmountCents <= 0 || !d.dueDate || !deadline || d.dueDate > deadline) return acc;
+      if (d.dir === 'owed') return acc + d.remainingAmountCents;
+      if (d.dir === 'owe') return acc - d.remainingAmountCents;
+      return acc;
+    }, 0);
+
+    let inventoryAtCost = 0;
+    let realizedFlipProfit = 0;
+    let expectedFlipProfit = 0;
+
+    s.flips.forEach(f => {
+      const totalCost = (f.unitCostCents * f.quantity) + f.shippingCents + f.otherCostsCents;
+      const avgUnitCost = f.quantity > 0 ? Math.round(totalCost / f.quantity) : 0;
+      const soldQty = f.sales.reduce((sum, sale) => sum + sale.quantity, 0);
+      const remainingQty = Math.max(0, f.quantity - soldQty);
+      
+      inventoryAtCost += (remainingQty * avgUnitCost);
+      
+      f.sales.forEach(sale => {
+        const costBasis = sale.costCentsAtSale ?? avgUnitCost;
+        realizedFlipProfit += (sale.quantity * (sale.unitPriceCents - costBasis));
+      });
+      
+      const targetPrice = f.targetUnitPriceCents || avgUnitCost;
+      expectedFlipProfit += (remainingQty * (targetPrice - avgUnitCost));
+    });
+
+    return { carFundCents, owedToMe, iOwe, expectedDebtNet, affiliateEarningsCents, inventoryAtCost, realizedFlipProfit, expectedFlipProfit };
+  };
+
+  const getRecurringProjection = (untilDate) => {
+    // FIX #19: recurring transactions (e.g. rent) have a known schedule — project
+    // their exact future occurrences up to the goal deadline instead of guessing.
+    const s = Store.get();
+    if (!untilDate) return 0;
+    let total = 0;
+    s.transactions.forEach(t => {
+      if (!t.recurring || !t.nextDueDate) return;
+      let due = t.nextDueDate;
+      let guard = 0;
+      while (due && due <= untilDate && guard < 1000) {
+        if (t.type === 'income') total += t.amountCents;
+        else if (t.type === 'expense') total -= t.amountCents;
+        const next = new Date(due + 'T00:00:00');
+        if (t.recurring === 'weekly') next.setDate(next.getDate() + 7);
+        else if (t.recurring === 'monthly') next.setMonth(next.getMonth() + 1);
+        due = next.toISOString().slice(0, 10);
+        guard++;
+      }
+    });
+    return total;
+  };
+
+  const getRecentDailyNet = () => {
+    // FIX #19: only irregular (non-recurring) transactions feed this average now —
+    // recurring ones are projected exactly via getRecurringProjection instead, so
+    // they aren't extrapolated twice or by a crude daily-average guess.
+    // Also requires a minimum amount of real history before trusting the pace at
+    // all — one transaction on one day should not get extrapolated over months.
+    const s = Store.get();
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
+    const MIN_DAYS = 5;
+    const MIN_TX = 3;
+
+    const recent = s.transactions.filter(t => {
+      if (t.recurring) return false;
+      const d = Utils.parseDate(t.date);
+      return d && d >= cutoff;
+    }).sort((a, b) => a.date.localeCompare(b.date));
+
+    if (recent.length === 0) return { dailyNet: 0, insufficientData: true };
+
+    const actualDays = Math.max(1, Utils.daysBetween(recent[0].date, Utils.todayISO()) || 1);
+    if (actualDays < MIN_DAYS || recent.length < MIN_TX) {
+      return { dailyNet: 0, insufficientData: true };
+    }
+
+    const recentNet = recent.reduce((a, t) => {
+      if (t.type === 'income') return a + t.amountCents;
+      if (t.type === 'expense') return a - t.amountCents;
+      return a;
+    }, 0);
+    return { dailyNet: recentNet / actualDays, insufficientData: false };
+  };
+
+  // FIX #20: a real (if simple) machine learning model — ordinary least-squares
+  // linear regression fit across your ENTIRE balance history, not just a 30-day
+  // average. This captures a trend line through all the noise in your data and
+  // reports R² (how well that line actually fits) so you can judge how much to
+  // trust it, rather than presenting a guess as certainty.
+  const getMLTrendForecast = (deadline) => {
+    const s = Store.get();
+    if (!deadline) return { insufficientData: true };
+
+    // Build one net-effect-per-day, then a cumulative balance series over calendar days.
+    const byDate = {};
+    s.transactions.forEach(t => {
+      const delta = (t.type === 'income' || t.type === 'transfer_in') ? t.amountCents
+                  : (t.type === 'expense' || t.type === 'transfer_out') ? -t.amountCents : 0;
+      byDate[t.date] = (byDate[t.date] || 0) + delta;
+    });
+    const dates = Object.keys(byDate).sort();
+    if (dates.length < 4) return { insufficientData: true, pointsUsed: dates.length };
+
+    const firstDate = dates[0];
+    let running = s.openingBalanceCents || 0;
+    const points = dates.map(d => {
+      running += byDate[d];
+      return { x: Utils.daysBetween(firstDate, d), y: running };
+    });
+
+    const n = points.length;
+    const sumX = points.reduce((a, p) => a + p.x, 0);
+    const sumY = points.reduce((a, p) => a + p.y, 0);
+    const sumXY = points.reduce((a, p) => a + p.x * p.y, 0);
+    const sumX2 = points.reduce((a, p) => a + p.x * p.x, 0);
+    const denom = (n * sumX2 - sumX * sumX);
+    if (denom === 0) return { insufficientData: true, pointsUsed: n };
+
+    const slope = (n * sumXY - sumX * sumY) / denom;
+    const intercept = (sumY - slope * sumX) / n;
+
+    // R² — how much of the balance's variation the trend line actually explains.
+    const meanY = sumY / n;
+    const ssTot = points.reduce((a, p) => a + Math.pow(p.y - meanY, 2), 0);
+    const ssRes = points.reduce((a, p) => a + Math.pow(p.y - (intercept + slope * p.x), 2), 0);
+    const r2 = ssTot > 0 ? Math.max(0, 1 - ssRes / ssTot) : 0;
+
+    const xDeadline = Utils.daysBetween(firstDate, deadline);
+    const predictedBalanceCents = Math.round(intercept + slope * xDeadline);
+
+    return { insufficientData: false, predictedBalanceCents, dailyTrendCents: slope, r2, pointsUsed: n };
+  };
+
+  return { getBalances, getRecurringProjection, getRecentDailyNet, getMLTrendForecast };
+})();
+
+const Render = (() => {
+  function escapeHtml(s) { return (s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+  // FIX #13: shared helper for the two now-bidirectional transfer types, so the
+  // tag color, sign, and label stay consistent between the dashboard and ledger.
+  function txDisplay(t) {
+    if (t.type === 'income') return { tag: 'in', sign: '+', cls: 'pos', label: 'income' };
+    if (t.type === 'expense') return { tag: 'out', sign: '−', cls: 'neg', label: 'expense' };
+    if (t.type === 'transfer_in') return { tag: 'transfer', sign: '→', cls: '', label: 'transfer in' };
+    if (t.type === 'transfer_out') return { tag: 'transfer', sign: '←', cls: '', label: 'transfer out' };
+    return { tag: 'transfer', sign: '⇄', cls: '', label: t.type };
+  }
+
+  function gauge(pct) {
+    const cx = 200, cy = 220, r = 150;
+    const startAngle = 135, endAngle = 405;
+    const sweep = endAngle - startAngle;
+    const clamped = Math.max(0, Math.min(100, pct));
+    const needleAngle = startAngle + (sweep * clamped / 100);
+    
+    const polar = (a, rad = r) => {
+      const rr = a * Math.PI / 180;
+      return [cx + rad * Math.cos(rr), cy + rad * Math.sin(rr)];
+    };
+    const [x1, y1] = polar(startAngle);
+    const [x2, y2] = polar(endAngle);
+    const [xf, yf] = polar(needleAngle);
+    const [xn, yn] = polar(needleAngle, r - 10);
+    
+    const large = sweep > 180 ? 1 : 0;
+    const fillLarge = (needleAngle - startAngle) > 180 ? 1 : 0;
+    
+    const bgArc = `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`;
+    const fillArc = `M ${x1} ${y1} A ${r} ${r} 0 ${fillLarge} 1 ${xf} ${yf}`;
+    
+    let ticks = '';
+    for (let i = 0; i <= 10; i++) {
+      const a = startAngle + (sweep * i / 10);
+      const [xa, ya] = polar(a, r + 6);
+      const [xb, yb] = polar(a, r - 6);
+      ticks += `<line x1="${xa}" y1="${ya}" x2="${xb}" y2="${yb}" stroke="${i % 5 === 0 ? '#ffb68c' : '#48454e'}" stroke-width="${i % 5 === 0 ? 2 : 1}"/>`;
+    }
+    
+    return `
+      <svg viewBox="0 0 400 380">
+        <defs>
+          <linearGradient id="fillGrad" x1="0" x2="1">
+            <stop offset="0" stop-color="#ffb4ab"/>
+            <stop offset=".5" stop-color="#ffb68c"/>
+            <stop offset="1" stop-color="#a1d489"/>
+          </linearGradient>
+          <filter id="glow"><feGaussianBlur stdDeviation="3"/></filter>
+        </defs>
+        <path d="${bgArc}" fill="none" stroke="#322f35" stroke-width="22" stroke-linecap="round"/>
+        <path d="${fillArc}" fill="none" stroke="url(#fillGrad)" stroke-width="22" stroke-linecap="round" filter="url(#glow)" opacity=".9"/>
+        ${ticks}
+        <line x1="${cx}" y1="${cy}" x2="${xn}" y2="${yn}" stroke="#ffb68c" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="${cx}" cy="${cy}" r="10" fill="#2b2930" stroke="#ffb68c" stroke-width="2"/>
+        <text x="${cx}" y="${cy - 40}" text-anchor="middle" fill="#e6e0e9" font-family="Roboto" font-size="44" font-weight="500">${clamped.toFixed(0)}%</text>
+        <text x="${cx}" y="${cy - 10}" text-anchor="middle" fill="#cac4cf" font-family="Roboto" font-size="14" letter-spacing="1">OF GOAL</text>
+      </svg>`;
+  }
+
+  function dashboard() {
+    const bal = Accounting.getBalances();
+    const s = Store.get();
+    const targetCents = s.goal.targetCents || 0;
+    const pct = targetCents > 0 ? Math.max(0, Math.min(100, (bal.carFundCents / targetCents) * 100)) : 0;
+    const remaining = Math.max(0, targetCents - bal.carFundCents);
+    const daysLeft = s.goal.deadline ? Math.max(0, Utils.daysBetween(Utils.todayISO(), s.goal.deadline) || 0) : 0;
+    const dailyNeeded = (daysLeft > 0) ? (remaining / daysLeft) : (remaining > 0 ? remaining : 0);
+
+    // FIX #19: recurring items (known schedule) and irregular items (historical
+    // pace, only trusted once there's enough history) are projected separately.
+    const recurringProj = s.goal.deadline ? Accounting.getRecurringProjection(s.goal.deadline) : 0;
+    const netInfo = Accounting.getRecentDailyNet();
+    const irregularProj = netInfo.insufficientData ? 0 : netInfo.dailyNet * (daysLeft > 0 ? daysLeft : 30);
+    // For ETA purposes, combine the known recurring pace-per-day with the irregular pace.
+    const recurringDailyRate = daysLeft > 0 ? recurringProj / daysLeft : 0;
+    const etaDailyNet = recurringDailyRate + (netInfo.insufficientData ? 0 : netInfo.dailyNet);
+
+    let etaDate = null;
+    if (etaDailyNet > 0 && remaining > 0) {
+      etaDate = new Date(); etaDate.setDate(etaDate.getDate() + Math.ceil(remaining / etaDailyNet));
+    } else if (remaining <= 0) {
+      etaDate = new Date();
+    }
+
+    const reached = pct >= 100 && targetCents > 0;
+    document.getElementById('celebrationBanner').hidden = !reached;
+    document.getElementById('goalCelebrationBanner').hidden = !reached;
+
+    document.getElementById('gaugeWrap').innerHTML = gauge(pct);
+    document.getElementById('carFundStats').innerHTML = `
+      <div class="stat"><div class="k">Current Fund</div><div class="v pos">${Utils.fmt(bal.carFundCents)}</div></div>
+      <div class="stat"><div class="k">Still Needed</div><div class="v warn">${Utils.fmt(remaining)}</div></div>
+      <div class="stat"><div class="k">Daily Required</div><div class="v">${Utils.fmt(dailyNeeded)}</div></div>
+    `;
+
+    document.getElementById('moneyStats').innerHTML = `
+      <div class="stat" style="margin-bottom:8px"><div class="k">Car Fund</div><div class="v ${bal.carFundCents >= 0 ? 'pos' : 'neg'}">${Utils.fmt(bal.carFundCents)}</div></div>
+      <div class="stat" style="margin-bottom:8px"><div class="k">Shein Affiliate (total)</div><div class="v pos">${Utils.fmt(bal.affiliateEarningsCents)}</div></div>
+      <div class="stat" style="margin-bottom:8px"><div class="k">Owed to Me</div><div class="v pos">+${Utils.fmt(bal.owedToMe)}</div></div>
+      <div class="stat" style="margin-bottom:8px"><div class="k">I Owe</div><div class="v neg">−${Utils.fmt(bal.iOwe)}</div></div>
+      <div class="stat"><div class="k">Net Position</div><div class="v">${Utils.fmt(bal.carFundCents + bal.owedToMe - bal.iOwe)}</div></div>
+    `;
+
+    document.getElementById('flipStats').innerHTML = `
+      <div class="stat" style="margin-bottom:8px"><div class="k">Inventory at Cost</div><div class="v">${Utils.fmt(bal.inventoryAtCost)}</div></div>
+      <div class="stat" style="margin-bottom:8px"><div class="k">Realized Profit</div><div class="v ${bal.realizedFlipProfit >= 0 ? 'pos' : 'neg'}">${Utils.fmt(bal.realizedFlipProfit)}</div></div>
+      <div class="stat"><div class="k">Expected Profit</div><div class="v warn">+${Utils.fmt(bal.expectedFlipProfit)}</div></div>
+    `;
+
+    const projectedTotal = bal.carFundCents + bal.expectedFlipProfit + bal.expectedDebtNet + recurringProj + irregularProj;
+    const ml = s.goal.deadline ? Accounting.getMLTrendForecast(s.goal.deadline) : { insufficientData: true };
+    document.getElementById('forecastStats').innerHTML = `
+      <div class="stat" style="margin-bottom:8px"><div class="k">Current Car Fund</div><div class="v">${Utils.fmt(bal.carFundCents)}</div></div>
+      <div class="stat" style="margin-bottom:8px"><div class="k">+ Exp. Flip Profit</div><div class="v pos">+${Utils.fmt(bal.expectedFlipProfit)}</div></div>
+      <div class="stat" style="margin-bottom:8px"><div class="k">+/- Exp. Debt Settlements</div><div class="v ${bal.expectedDebtNet >= 0 ? 'pos' : 'neg'}">${bal.expectedDebtNet >= 0 ? '+' : ''}${Utils.fmt(bal.expectedDebtNet)}</div></div>
+      <div class="stat" style="margin-bottom:8px"><div class="k">+/- Scheduled Recurring (to deadline)</div><div class="v ${recurringProj >= 0 ? 'pos' : 'neg'}">${recurringProj >= 0 ? '+' : ''}${Utils.fmt(recurringProj)}</div></div>
+      <div class="stat" style="margin-bottom:8px"><div class="k">+ Irregular Income/Exp. (pace-based)</div><div class="v ${netInfo.insufficientData ? 'warn' : (irregularProj >= 0 ? 'pos' : 'neg')}">${netInfo.insufficientData ? 'Not enough history yet' : (irregularProj >= 0 ? '+' : '') + Utils.fmt(irregularProj)}</div></div>
+      <div class="stat"><div class="k">= Projected Total</div><div class="v ${projectedTotal >= targetCents ? 'pos' : 'warn'}">${Utils.fmt(projectedTotal)}</div></div>
+    `;
+
+    document.getElementById('mlForecast').innerHTML = ml.insufficientData
+      ? `<p style="color:var(--md-on-surface-variant); margin:0">Not enough spread of transaction dates yet (need at least 4 different days logged) to fit a trend line. Keep logging — this fills in on its own.</p>`
+      : `<div class="grid stats" style="grid-template-columns:repeat(3,1fr)">
+          <div class="stat"><div class="k">Trend-fitted balance at deadline</div><div class="v ${ml.predictedBalanceCents >= targetCents ? 'pos' : 'warn'}">${Utils.fmt(ml.predictedBalanceCents)}</div></div>
+          <div class="stat"><div class="k">Daily trend</div><div class="v ${ml.dailyTrendCents >= 0 ? 'pos' : 'neg'}">${ml.dailyTrendCents >= 0 ? '+' : ''}${Utils.fmt(ml.dailyTrendCents)}/day</div></div>
+          <div class="stat"><div class="k">Fit quality (R²)</div><div class="v">${(ml.r2 * 100).toFixed(0)}%</div></div>
+        </div>
+        <p style="color:var(--md-on-surface-variant); font-size:12px; margin:10px 0 0">Fitted from ${ml.pointsUsed} days of history using linear regression. A low R² means your balance doesn't move in a straight line (e.g. lumpy income) — trust the schedule-based projection above more in that case.</p>`;
+
+    const dueRecurring = s.transactions.filter(t => t.recurring && t.nextDueDate && t.nextDueDate <= Utils.todayISO());
+    document.getElementById('processRecurringBtn').hidden = dueRecurring.length === 0;
+    document.getElementById('recurringAlert').hidden = dueRecurring.length === 0;
+
+    const recent = [...s.transactions].sort((a, b) => {
+      const dateCmp = b.date.localeCompare(a.date);
+      return dateCmp !== 0 ? dateCmp : b.id.localeCompare(a.id);
+    }).slice(0, 8);
+    
+    document.getElementById('recentCard').innerHTML = recent.length
+      ? `<table><thead><tr><th>Date</th><th>Category</th><th>Note</th><th class="amt">Amount</th></tr></thead><tbody>
+           ${recent.map(t => `<tr>
+             <td class="mono">${t.date}</td>
+             <td>${escapeHtml(t.category)} <span class="tag ${txDisplay(t).tag}">${txDisplay(t).label}</span></td>
+             <td style="color:var(--ink-dim)">${escapeHtml(t.note || '')}</td>
+             <td class="amt ${txDisplay(t).cls}">${txDisplay(t).sign}${Utils.fmt(t.amountCents)}</td>
+           </tr>`).join('')}
+         </tbody></table>`
+      : `<div class="empty">Nothing logged yet.</div>`;
+  }
+
+  function ledger() {
+    const s = Store.get();
+    const f = s.ui.ledgerFilter;
+    let rows = [...s.transactions];
+    if (f === 'income') rows = rows.filter(t => t.type === 'income');
+    else if (f === 'expense') rows = rows.filter(t => t.type === 'expense');
+    else if (f === 'transfer') rows = rows.filter(t => t.type === 'transfer_in' || t.type === 'transfer_out');
+    rows.sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+    
+    const totalIncome = s.transactions.filter(t => t.type === 'income').reduce((a, t) => a + t.amountCents, 0);
+    const totalExpense = s.transactions.filter(t => t.type === 'expense').reduce((a, t) => a + t.amountCents, 0);
+    const netBalance = totalIncome - totalExpense;
+
+    const card = document.getElementById('ledgerCard');
+    card.innerHTML = (rows.length ? `<table><thead><tr><th>Date</th><th>Type</th><th>Category</th><th>Note</th><th>Recur</th><th class="amt">Amount</th><th></th></tr></thead><tbody>
+           ${rows.map(t => `<tr>
+             <td class="mono">${t.date}</td>
+             <td><span class="tag ${txDisplay(t).tag}">${txDisplay(t).label}</span></td>
+             <td>${escapeHtml(t.category)}</td>
+             <td style="color:var(--ink-dim)">${escapeHtml(t.note || '')}</td>
+             <td>${t.recurring ? '<span class="material-symbols-outlined" style="font-size:16px">autorenew</span>' : '—'}</td>
+             <td class="amt ${txDisplay(t).cls}">${txDisplay(t).sign}${Utils.fmt(t.amountCents)}</td>
+             <td>
+               <button class="icon" data-edit="transactions" data-id="${t.id}" title="Edit"><span class="material-symbols-outlined" style="font-size:18px">edit</span></button>
+               <button class="icon" data-del="transactions" data-id="${t.id}" title="Delete"><span class="material-symbols-outlined" style="font-size:18px">delete</span></button>
+             </td>
+           </tr>`).join('')}
+         </tbody></table>` : `<div class="empty">No transactions match this filter.</div>`) + 
+      `<div class="ledger-footer">
+         <div class="item"><div class="k">Total Income</div><div class="v pos">${Utils.fmt(totalIncome)}</div></div>
+         <div class="item"><div class="k">Total Expenses</div><div class="v neg">${Utils.fmt(totalExpense)}</div></div>
+         <div class="item"><div class="k">Net Balance</div><div class="v ${netBalance >= 0 ? 'pos' : 'neg'}">${Utils.fmt(netBalance)}</div></div>
+       </div>`;
+  }
+
+  function people() {
+    const s = Store.get();
+    const showSettled = s.ui.showSettled;
+    const render = (dir, el) => {
+      const rows = s.debts.filter(d => d.dir === dir && (showSettled || d.remainingAmountCents > 0));
+      el.innerHTML = rows.length
+        ? `<table><thead><tr><th>Person</th><th>Date</th><th>Due</th><th>Remaining</th><th>Note</th><th></th></tr></thead><tbody>
+             ${rows.map(d => {
+               const isSettled = d.remainingAmountCents <= 0;
+               const isOverdue = !isSettled && d.dueDate && d.dueDate < Utils.todayISO();
+               return `<tr style="${isSettled ? 'opacity:.5' : ''}">
+                 <td>${escapeHtml(d.person)}</td>
+                 <td class="mono">${d.date}</td>
+                 <td class="mono ${isOverdue ? 'neg' : ''}">${d.dueDate ? d.dueDate + (isOverdue ? ' <span class="material-symbols-outlined" style="font-size:14px">warning</span>' : '') : '—'}</td>
+                 <td class="amt">${Utils.fmt(d.remainingAmountCents)}</td>
+                 <td style="color:var(--ink-dim)">${escapeHtml(d.note || '')}</td>
+                 <td>
+                   ${!isSettled ? `<button class="btn small ghost" data-settle="${d.id}">Settle</button>` : `<button class="icon" data-unsettle="${d.id}" title="Reopen"><span class="material-symbols-outlined" style="font-size:18px">restart_alt</span></button>`}
+                   <button class="icon" data-edit="debts" data-id="${d.id}" title="Edit"><span class="material-symbols-outlined" style="font-size:18px">edit</span></button>
+                   <button class="icon" data-del="debts" data-id="${d.id}" title="Delete"><span class="material-symbols-outlined" style="font-size:18px">delete</span></button>
+                 </td>
+               </tr>`;
+             }).join('')}
+           </tbody></table>`
+        : `<div class="empty">${dir === 'owed' ? 'Nobody owes you right now.' : "You don't owe anyone right now."}</div>`;
+    };
+    render('owed', document.getElementById('owedToMe'));
+    render('owe', document.getElementById('iOwe'));
+  }
+
+  function budgets() {
+    const s = Store.get();
+    const m = s.ui.budgetMonth;
+    document.getElementById('curMonth').textContent = Utils.monthLabel(m);
+    
+    const lines = s.budgets.filter(b => b.month === m);
+    const actual = {};
+    s.transactions.filter(t => t.type === 'expense' && Utils.monthKey(t.date) === m)
+      .forEach(t => actual[t.category] = (actual[t.category] || 0) + t.amountCents);
+      
+    const card = document.getElementById('budgetTable');
+    if (!lines.length) { card.innerHTML = `<div class="empty">No budget lines for ${Utils.monthLabel(m)} yet.</div>`; return; }
+    
+    card.innerHTML = `<table><thead><tr><th>Category</th><th class="amt">Planned</th><th class="amt">Actual</th><th class="amt">Delta</th><th></th></tr></thead><tbody>
+      ${lines.map(b => {
+        const a = actual[b.category] || 0;
+        const d = b.plannedCents - a;
+        const isOver = d < 0;
+        return `<tr>
+          <td>${escapeHtml(b.category)} ${isOver ? '<span class="material-symbols-outlined" style="font-size:14px">warning</span>' : ''}</td>
+          <td class="amt">${Utils.fmt(b.plannedCents)}</td>
+          <td class="amt">${Utils.fmt(a)}</td>
+          <td class="amt ${isOver ? 'neg' : 'pos'}">${isOver ? '' : '+'}${Utils.fmt(d)}</td>
+          <td>
+            <button class="icon" data-edit="budgets" data-id="${b.id}" title="Edit"><span class="material-symbols-outlined" style="font-size:18px">edit</span></button>
+            <button class="icon" data-del="budgets" data-id="${b.id}"><span class="material-symbols-outlined" style="font-size:18px">delete</span></button>
+          </td>
+        </tr>`;
+      }).join('')}
+    </tbody></table>`;
+  }
+
+  function flips() {
+    const s = Store.get();
+    const tl = document.getElementById('flipTimeline');
+    if (!s.flips.length) tl.innerHTML = `<div class="empty" style="width:100%">No flips logged yet.</div>`;
+    else tl.innerHTML = s.flips.map(f => {
+      const totalCost = (f.unitCostCents * f.quantity) + f.shippingCents + f.otherCostsCents;
+      const avgUnitCost = f.quantity > 0 ? Math.round(totalCost / f.quantity) : 0;
+      const soldQty = f.sales.reduce((sum, sale) => sum + sale.quantity, 0);
+      const remainingQty = Math.max(0, f.quantity - soldQty);
+      
+      let stage = 'ordered';
+      if (f.actualArrival && Utils.parseDate(f.actualArrival) <= new Date(Utils.todayISO() + 'T00:00:00')) stage = 'arrived';
+      if (soldQty > 0 && remainingQty > 0) stage = 'selling';
+      // FIX #12: distinguish "fully sold" from "still selling" instead of overloading one label.
+      if (remainingQty === 0 && soldQty > 0) stage = 'sold';
+
+      const realizedProfit = f.sales.reduce((sum, sale) => sum + (sale.quantity * (sale.unitPriceCents - (sale.costCentsAtSale ?? avgUnitCost))), 0);
+      
+      return `<div class="flip-card">
+        <div class="name">${escapeHtml(f.item)} <span style="color:var(--ink-faint); font-size:12px">(${remainingQty}/${f.quantity} left)</span></div>
+        <div class="stage ${stage}">${stage}</div>
+        <div class="nums">
+          Cost: ${Utils.fmt(totalCost)} (Avg: ${Utils.fmt(avgUnitCost)}/u)<br>
+          ${f.targetUnitPriceCents ? `Target: ${Utils.fmt(f.targetUnitPriceCents)}/u<br>` : ''}
+          ${realizedProfit !== 0 ? `<span class="${realizedProfit >= 0 ? 'pos' : 'neg'}">Profit: ${Utils.fmt(realizedProfit)}</span><br>` : ''}
+          ${f.sales.length > 0 ? `<div style="margin-top:6px; border-top:1px solid var(--line); padding-top:6px">
+            <!-- FIX #2: Use sale.quantity instead of sale.qty -->
+            ${f.sales.map(sale => `<div style="font-size:11px">${sale.date}: ${sale.quantity}u @ ${Utils.fmt(sale.unitPriceCents)}</div>`).join('')}
+          </div>` : ''}
+        </div>
+        <div style="margin-top:10px; display:flex; gap:6px">
+          ${remainingQty > 0 ? `<button class="btn small primary" data-sell="${f.id}" data-max="${remainingQty}">Record Sale</button>` : ''}
+          <button class="btn small ghost" data-edit="flips" data-id="${f.id}">Edit</button>
+          <button class="btn small ghost danger" data-del="flips" data-id="${f.id}">Delete</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function goal() {
+    const bal = Accounting.getBalances();
+    const s = Store.get();
+    document.getElementById('goalForm').querySelector('[name=label]').value = s.goal.label || '';
+    document.getElementById('goalForm').querySelector('[name=target]').value = Utils.fromCents(s.goal.targetCents);
+    document.getElementById('goalForm').querySelector('[name=deadline]').value = s.goal.deadline || '';
+    
+    const targetCents = s.goal.targetCents || 0;
+    const remaining = Math.max(0, targetCents - bal.carFundCents);
+    const daysLeft = s.goal.deadline ? Math.max(0, Utils.daysBetween(Utils.todayISO(), s.goal.deadline) || 0) : 0;
+
+    // FIX #19: same recurring/irregular split as the dashboard, so the two tabs agree.
+    const recurringProj = s.goal.deadline ? Accounting.getRecurringProjection(s.goal.deadline) : 0;
+    const netInfo = Accounting.getRecentDailyNet();
+    const recurringDailyRate = daysLeft > 0 ? recurringProj / daysLeft : 0;
+    const etaDailyNet = recurringDailyRate + (netInfo.insufficientData ? 0 : netInfo.dailyNet);
+    
+    let etaDate = null;
+    if (etaDailyNet > 0 && remaining > 0) {
+      etaDate = new Date(); etaDate.setDate(etaDate.getDate() + Math.ceil(remaining / etaDailyNet));
+    } else if (remaining <= 0) {
+      etaDate = new Date();
+    }
+
+    document.getElementById('paceCheck').innerHTML = `
+      <div class="grid stats" style="grid-template-columns:1fr 1fr">
+        <div class="stat"><div class="k">Car Fund Balance</div><div class="v pos">${Utils.fmt(bal.carFundCents)}</div></div>
+        <div class="stat"><div class="k">Avg Daily Net – Irregular (30d)</div><div class="v ${netInfo.insufficientData ? 'warn' : (netInfo.dailyNet >= 0 ? 'pos' : 'neg')}">${netInfo.insufficientData ? 'Not enough history yet' : Utils.fmt(netInfo.dailyNet)}</div></div>
+        <div class="stat" style="grid-column:1/-1"><div class="k">At this pace, you'll reach the goal by</div>
+          <div class="v ${etaDate ? 'pos' : 'warn'}">${etaDate ? etaDate.toISOString().slice(0, 10) : 'not reachable at current pace'}</div></div>
+      </div>`;
+      
+    document.getElementById('netBreakdown').innerHTML = `
+      <div class="grid stats" style="grid-template-columns:1fr 1fr">
+        <div class="stat"><div class="k">Car Fund Balance</div><div class="v pos">${Utils.fmt(bal.carFundCents)}</div></div>
+        <div class="stat"><div class="k">Owed to Me</div><div class="v pos">+${Utils.fmt(bal.owedToMe)}</div></div>
+        <div class="stat"><div class="k">I Owe</div><div class="v neg">−${Utils.fmt(bal.iOwe)}</div></div>
+        <div class="stat"><div class="k">Total Net Position</div><div class="v">${Utils.fmt(bal.carFundCents + bal.owedToMe - bal.iOwe)}</div></div>
+        <div class="stat"><div class="k">Inventory at Cost</div><div class="v warn">${Utils.fmt(bal.inventoryAtCost)}</div></div>
+        <div class="stat"><div class="k">Exp. Debt Settlements (by deadline)</div><div class="v ${bal.expectedDebtNet >= 0 ? 'pos' : 'neg'}">${bal.expectedDebtNet >= 0 ? '+' : ''}${Utils.fmt(bal.expectedDebtNet)}</div></div>
+      </div>
+      <p style="color:var(--ink-faint); font-size:12px; margin-top:12px">
+        * Every income adds to your Car Fund; every expense subtracts from it directly. Debt settlements only count toward projections if they have an expected payment date on or before your goal deadline.
+      </p>`;
+
+    const ml = s.goal.deadline ? Accounting.getMLTrendForecast(s.goal.deadline) : { insufficientData: true };
+    document.getElementById('mlForecastGoal').innerHTML = ml.insufficientData
+      ? `<p style="color:var(--md-on-surface-variant); margin:0">Not enough spread of transaction dates yet (need at least 4 different days logged) to fit a trend line.</p>`
+      : `<div class="grid stats" style="grid-template-columns:repeat(3,1fr)">
+          <div class="stat"><div class="k">Trend-fitted balance at deadline</div><div class="v ${ml.predictedBalanceCents >= targetCents ? 'pos' : 'warn'}">${Utils.fmt(ml.predictedBalanceCents)}</div></div>
+          <div class="stat"><div class="k">Daily trend</div><div class="v ${ml.dailyTrendCents >= 0 ? 'pos' : 'neg'}">${ml.dailyTrendCents >= 0 ? '+' : ''}${Utils.fmt(ml.dailyTrendCents)}/day</div></div>
+          <div class="stat"><div class="k">Fit quality (R²)</div><div class="v">${(ml.r2 * 100).toFixed(0)}%</div></div>
+        </div>
+        <p style="color:var(--md-on-surface-variant); font-size:12px; margin:10px 0 0">Fitted from ${ml.pointsUsed} days of history via linear regression across your whole balance history — a different lens than the schedule-based pace check above.</p>`;
+  }
+
+  function shein() {
+    const s = Store.get();
+    const list = s.sheinEarnings || [];
+    const today = Utils.todayISO();
+    let totalLogged = 0, pending = 0, available = 0, paidUsd = 0;
+    const card = document.getElementById('sheinCard');
+    if (!list.length) {
+      card.innerHTML = `<div class="empty">No commissions logged yet.</div>`;
+    } else {
+      const sorted = list.slice().sort((a,b)=> a.date < b.date ? 1 : -1);
+      card.innerHTML = `<table><thead><tr><th>Date Earned</th><th>Amount</th><th>Approved On</th><th>Available From</th><th>Status</th><th>Note</th><th></th></tr></thead><tbody>
+        ${sorted.map(e => {
+          const approvalDate = new Date(e.date+'T00:00:00'); approvalDate.setDate(approvalDate.getDate()+45);
+          const availableDate = new Date(approvalDate); availableDate.setDate(availableDate.getDate()+4);
+          const approvalISO = approvalDate.toISOString().slice(0,10);
+          const availableISO = availableDate.toISOString().slice(0,10);
+          totalLogged += e.amountRandCents;
+          let statusTag;
+          if (e.paidTxId) {
+            statusTag = `<span class="tag settled">Paid</span>`;
+            paidUsd += (e.paidUsdCents || 0);
+          } else if (today < approvalISO) {
+            statusTag = `<span class="tag pending">Pending Approval</span>`;
+            pending += e.amountRandCents;
+          } else if (today < availableISO) {
+            statusTag = `<span class="tag approved">Approved · Awaiting Payout</span>`;
+          } else {
+            statusTag = `<span class="tag available">Available for Payout</span>`;
+            available += e.amountRandCents;
+          }
+          return `<tr>
+            <td class="mono">${e.date}</td>
+            <td class="amt">${Utils.fmtZAR(e.amountRandCents)}</td>
+            <td class="mono">${approvalISO}</td>
+            <td class="mono">${availableISO}</td>
+            <td>${statusTag}</td>
+            <td style="color:var(--ink-dim)">${escapeHtml(e.note||'')}${e.paidTxId ? ` <span style="color:var(--md-on-surface-variant)">(${Utils.fmt(e.paidUsdCents)} on ${e.paidDate})</span>` : ''}</td>
+            <td>
+              ${!e.paidTxId ? `<button class="btn small ghost" data-shein-paid="${e.id}">Mark as Paid</button>` : ''}
+              <button class="icon" data-del="sheinEarnings" data-id="${e.id}" title="Delete"><span class="material-symbols-outlined" style="font-size:18px">delete</span></button>
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody></table>`;
+    }
+    document.getElementById('sheinTotalLogged').textContent = Utils.fmtZAR(totalLogged);
+    document.getElementById('sheinPending').textContent = Utils.fmtZAR(pending);
+    document.getElementById('sheinAvailable').textContent = Utils.fmtZAR(available);
+    document.getElementById('sheinPaidTotal').textContent = Utils.fmt(paidUsd);
+  }
+
+  function all() {
+    dashboard(); ledger(); people(); budgets(); flips(); shein(); goal();
+  }
+  return { all, dashboard, ledger, people, budgets, flips, shein, goal };
+})();
+
+const Events = (() => {
+  const $ = s => document.querySelector(s);
+  const $$ = s => document.querySelectorAll(s);
+
+  function modal(title, body) {
+    return new Promise(resolve => {
+      $('#modalTitle').textContent = title;
+      $('#modalBody').innerHTML = body;
+      $('#modal').classList.add('show');
+      const ok = () => { cleanup(); resolve(true); };
+      const cancel = () => { cleanup(); resolve(false); };
+      const cleanup = () => {
+        $('#modal').classList.remove('show');
+        $('#modalOk').removeEventListener('click', ok);
+        $('#modalCancel').removeEventListener('click', cancel);
+      };
+      $('#modalOk').addEventListener('click', ok);
+      $('#modalCancel').addEventListener('click', cancel);
+    });
+  }
+
+  function bindTabs() {
+    $$('#tabs button').forEach(b => b.addEventListener('click', () => {
+      $$('#tabs button').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      const tab = b.dataset.tab;
+      ['dashboard', 'ledger', 'people', 'budgets', 'flips', 'shein', 'goal', 'settings'].forEach(v => {
+        document.getElementById('view-' + v).hidden = (v !== tab);
+      });
+      Store.set({ ui: { ...Store.get().ui, tab } });
+    }));
+  }
+
+  function clearForm(formId) {
+    const f = $(`#${formId}`);
+    f.reset();
+    f.querySelector('[name=editId]').value = '';
+    if(f.date) f.date.value = Utils.todayISO();
+    if(f.orderDate) f.orderDate.value = Utils.todayISO();
+  }
+
+  // FIX #1: Explicit mapping from stored cents keys to form input names
+  const fieldMap = {
+    amountCents: 'amount',
+    plannedCents: 'planned',
+    unitCostCents: 'unitCost',
+    shippingCents: 'shipping',
+    otherCostsCents: 'otherCosts',
+    targetUnitPriceCents: 'targetPrice',
+    targetCents: 'target'
+  };
+
+  function setEditMode(formId, item) {
+    const f = $(`#${formId}`);
+    f.querySelector('[name=editId]').value = item.id;
+    
+    Object.keys(item).forEach(key => {
+      const inputName = fieldMap[key] || key;
+      const input = f.querySelector(`[name=${inputName}]`);
+      if (input && key !== 'id' && key !== 'editId' && key !== 'sales') {
+        if (key.endsWith('Cents')) {
+          input.value = Utils.fromCents(item[key]);
+        } else {
+          input.value = item[key];
+        }
+      }
+    });
+    
+    const submitBtn = f.querySelector('button[type=submit]');
+    const cancelBtn = f.querySelector('[id$=CancelBtn]');
+    const title = f.querySelector('[id$=Title]');
+    if(submitBtn) submitBtn.textContent = 'Update';
+    if(cancelBtn) cancelBtn.hidden = false;
+    if(title) title.textContent = title.textContent.replace('Add', 'Edit');
+  }
+
+  function bindTxForm() {
+    const f = $('#txForm');
+    f.date.value = Utils.todayISO();
+
+    // Quick-entry shortcut for a recurring daily check-in source (e.g. affiliate
+    // payouts) — jumps to the Ledger tab with Income + category pre-filled so
+    // only the amount needs typing.
+    $('#quickAffiliateBtn').addEventListener('click', () => {
+      document.querySelector('[data-tab=ledger]').click();
+      f.type.value = 'income';
+      f.category.value = 'Shein Affiliate';
+      f.date.value = Utils.todayISO();
+      setTimeout(() => f.amount.focus(), 50);
+    });
+
+    f.addEventListener('submit', e => {
+      e.preventDefault();
+      const fd = new FormData(f);
+      const date = fd.get('date');
+      if (!Utils.parseDate(date)) { alert('Invalid date format'); return; }
+      
+      const data = {
+        type: fd.get('type'),
+        date,
+        category: fd.get('category').trim(),
+        amountCents: Utils.toCents(fd.get('amount')),
+        note: fd.get('note').trim(),
+        recurring: fd.get('recurring') || ''
+      };
+
+      const editId = fd.get('editId');
+      if (editId) {
+        const existing = Store.get().transactions.find(t => t.id === editId);
+        data.nextDueDate = existing ? existing.nextDueDate : null;
+        Store.update('transactions', editId, data);
+        clearForm('txForm');
+        $('#txSubmitBtn').textContent = 'Add transaction';
+        $('#txCancelBtn').hidden = true;
+        $('#txFormTitle').textContent = 'Log a transaction';
+      } else {
+        if (data.recurring) {
+          const next = new Date(date + 'T00:00:00');
+          // FIX Minor #1: Use real calendar month addition for monthly
+          if (data.recurring === 'weekly') {
+            next.setDate(next.getDate() + 7);
+          } else if (data.recurring === 'monthly') {
+            next.setMonth(next.getMonth() + 1);
+          }
+          data.nextDueDate = next.toISOString().slice(0, 10);
+        }
+        Store.add('transactions', { id: Utils.uid(), ...data });
+        clearForm('txForm');
+      }
+      Render.all();
+    });
+
+    $('#txCancelBtn').addEventListener('click', () => {
+      clearForm('txForm');
+      $('#txSubmitBtn').textContent = 'Add transaction';
+      $('#txCancelBtn').hidden = true;
+      $('#txFormTitle').textContent = 'Log a transaction';
+    });
+  }
+
+  function bindLedgerFilters() {
+    $$('#view-ledger .chip').forEach(c => c.addEventListener('click', () => {
+      $$('#view-ledger .chip').forEach(x => x.classList.remove('active'));
+      c.classList.add('active');
+      Store.set({ ui: { ...Store.get().ui, ledgerFilter: c.dataset.filter } });
+      Render.ledger();
+    }));
+  }
+
+  function bindDebtForm() {
+    const f = $('#debtForm');
+    f.date.value = Utils.todayISO();
+    f.addEventListener('submit', e => {
+      e.preventDefault();
+      const fd = new FormData(f);
+      const date = fd.get('date');
+      if (!Utils.parseDate(date)) { alert('Invalid date format'); return; }
+      
+      const amountCents = Utils.toCents(fd.get('amount'));
+      const dueDate = fd.get('dueDate');
+      if (dueDate && !Utils.parseDate(dueDate)) { alert('Invalid expected payment date'); return; }
+      const data = {
+        dir: fd.get('dir'),
+        person: fd.get('person').trim(),
+        originalAmountCents: amountCents,
+        remainingAmountCents: amountCents,
+        date, dueDate: dueDate || '', note: fd.get('note').trim()
+      };
+
+      const editId = fd.get('editId');
+      if (editId) {
+        const existing = Store.get().debts.find(d => d.id === editId);
+        // FIX #9: remaining can never exceed the (possibly lowered) new original amount.
+        data.remainingAmountCents = existing ? Math.min(existing.remainingAmountCents, amountCents) : amountCents;
+        Store.update('debts', editId, data);
+        clearForm('debtForm');
+        $('#debtSubmitBtn').textContent = 'Add';
+        $('#debtCancelBtn').hidden = true;
+        $('#debtFormTitle').textContent = 'Add a debt';
+      } else {
+        Store.add('debts', { id: Utils.uid(), payments: [], ...data });
+        clearForm('debtForm');
+      }
+      Render.all();
+    });
+
+    $('#debtCancelBtn').addEventListener('click', () => {
+      clearForm('debtForm');
+      $('#debtSubmitBtn').textContent = 'Add';
+      $('#debtCancelBtn').hidden = true;
+      $('#debtFormTitle').textContent = 'Add a debt';
+    });
+  }
+
+  function bindBudgetForm() {
+    const f = $('#budgetForm');
+    f.addEventListener('submit', e => {
+      e.preventDefault();
+      const fd = new FormData(f);
+      const editId = fd.get('editId');
+      const data = {
+        month: Store.get().ui.budgetMonth,
+        category: fd.get('category').trim(),
+        plannedCents: Utils.toCents(fd.get('planned'))
+      };
+      
+      if (editId) {
+        Store.update('budgets', editId, data);
+        clearForm('budgetForm');
+        $('#budgetSubmitBtn').textContent = 'Save';
+        $('#budgetCancelBtn').hidden = true;
+      } else {
+        Store.add('budgets', { id: Utils.uid(), ...data });
+        clearForm('budgetForm');
+      }
+      Render.budgets();
+    });
+
+    $('#budgetCancelBtn').addEventListener('click', () => {
+      clearForm('budgetForm');
+      $('#budgetSubmitBtn').textContent = 'Save';
+      $('#budgetCancelBtn').hidden = true;
+    });
+
+    $('#prevMonth').addEventListener('click', () => {
+      // FIX Minor #2: Parse as local time to prevent UTC month jumps
+      const [y, m] = Store.get().ui.budgetMonth.split('-');
+      const d = new Date(+y, +m - 1, 1);
+      d.setMonth(d.getMonth() - 1);
+      Store.set({ ui: { ...Store.get().ui, budgetMonth: Utils.monthKey(d.toISOString().slice(0, 10)) } });
+      Render.budgets();
+    });
+    $('#nextMonth').addEventListener('click', () => {
+      const [y, m] = Store.get().ui.budgetMonth.split('-');
+      const d = new Date(+y, +m - 1, 1);
+      d.setMonth(d.getMonth() + 1);
+      Store.set({ ui: { ...Store.get().ui, budgetMonth: Utils.monthKey(d.toISOString().slice(0, 10)) } });
+      Render.budgets();
+    });
+  }
+
+  function bindFlipForm() {
+    const f = $('#flipForm');
+    f.orderDate.value = Utils.todayISO();
+    f.addEventListener('submit', e => {
+      e.preventDefault();
+      const fd = new FormData(f);
+      const orderDate = fd.get('orderDate');
+      const expectedArrival = fd.get('expectedArrival');
+      const actualArrival = fd.get('actualArrival');
+      
+      if (!Utils.parseDate(orderDate)) { alert('Invalid order date'); return; }
+      if (expectedArrival && Utils.parseDate(expectedArrival) < Utils.parseDate(orderDate)) {
+        alert('Expected arrival cannot be before order date.'); return;
+      }
+      if (actualArrival && Utils.parseDate(actualArrival) < Utils.parseDate(orderDate)) {
+        alert('Actual arrival cannot be before order date.'); return;
+      }
+
+      const data = {
+        item: fd.get('item').trim(),
+        quantity: parseInt(fd.get('quantity')) || 1,
+        unitCostCents: Utils.toCents(fd.get('unitCost')),
+        shippingCents: Utils.toCents(fd.get('shipping')),
+        otherCostsCents: Utils.toCents(fd.get('otherCosts')),
+        orderDate,
+        expectedArrival: expectedArrival || '',
+        actualArrival: actualArrival || '',
+        targetUnitPriceCents: Utils.toCents(fd.get('targetPrice')),
+        sales: []
+      };
+
+      const editId = fd.get('editId');
+      if (editId) {
+        const existing = Store.get().flips.find(flip => flip.id === editId);
+        data.sales = existing ? existing.sales : [];
+        // FIX #10: keep the auto-created purchase expense in sync with edits.
+        if (existing && existing.linkedTxId) {
+          const totalCost = data.unitCostCents * data.quantity + data.shippingCents + data.otherCostsCents;
+          Store.update('transactions', existing.linkedTxId, {
+            date: orderDate,
+            category: `Flip: ${data.item}`,
+            amountCents: totalCost,
+            note: `Initial purchase for flip ${data.item}`
+          });
+        }
+        Store.update('flips', editId, data);
+        clearForm('flipForm');
+        $('#flipSubmitBtn').textContent = 'Add flip';
+        $('#flipCancelBtn').hidden = true;
+        $('#flipFormTitle').textContent = 'Add a flip';
+      } else {
+        const flipId = Utils.uid();
+        data.id = flipId;
+        
+        if (fd.get('autoExpense') === 'on') {
+          const totalCost = data.unitCostCents * data.quantity + data.shippingCents + data.otherCostsCents;
+          const txId = Utils.uid();
+          data.linkedTxId = txId;
+          Store.add('transactions', {
+            id: txId, type: 'expense', date: orderDate,
+            category: `Flip: ${data.item}`,
+            amountCents: totalCost,
+            note: `Initial purchase for flip ${data.item}`,
+            recurring: '', nextDueDate: null
+          });
+        }
+        Store.add('flips', data);
+        clearForm('flipForm');
+      }
+      Render.all();
+    });
+
+    $('#flipCancelBtn').addEventListener('click', () => {
+      clearForm('flipForm');
+      $('#flipSubmitBtn').textContent = 'Add flip';
+      $('#flipCancelBtn').hidden = true;
+      $('#flipFormTitle').textContent = 'Add a flip';
+    });
+  }
+
+  function bindSaleModal() {
+    $('#saleCancel').addEventListener('click', () => $('#saleModal').classList.remove('show'));
+    
+    document.addEventListener('click', e => {
+      if (e.target.dataset.sell) {
+        const flipId = e.target.dataset.sell;
+        const maxQty = e.target.dataset.max;
+        $('#saleForm').querySelector('[name=flipId]').value = flipId;
+        $('#saleForm').querySelector('[name=date]').value = Utils.todayISO();
+        $('#saleForm').querySelector('[name=qty]').max = maxQty;
+        $('#saleForm').querySelector('[name=qty]').value = 1;
+        $('#saleModal').classList.add('show');
+      }
+    });
+
+    $('#saleForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const fd = new FormData($('#saleForm'));
+      const flipId = fd.get('flipId');
+      const flip = Store.get().flips.find(f => f.id === flipId);
+      if (!flip) return;
+
+      const qty = parseInt(fd.get('qty'));
+      const maxQty = parseInt($('#saleForm').querySelector('[name=qty]').max);
+      if (qty > maxQty) { alert(`Cannot sell more than ${maxQty} units.`); return; }
+
+      // FIX #11: freeze the cost basis at the moment of sale so a later edit to the
+      // flip's cost fields can't retroactively change already-realized profit.
+      const totalCostNow = (flip.unitCostCents * flip.quantity) + flip.shippingCents + flip.otherCostsCents;
+      const avgUnitCostNow = flip.quantity > 0 ? Math.round(totalCostNow / flip.quantity) : 0;
+
+      const sale = {
+        id: Utils.uid(),
+        date: fd.get('date'),
+        quantity: qty,
+        unitPriceCents: Utils.toCents(fd.get('price')),
+        costCentsAtSale: avgUnitCostNow,
+        note: 'Manual sale'
+      };
+
+      const updatedFlips = Store.get().flips.map(f => {
+        if (f.id === flipId) {
+          return { ...f, sales: [...f.sales, sale] };
+        }
+        return f;
+      });
+      Store.set({ flips: updatedFlips });
+
+      if (fd.get('autoIncome') === 'on') {
+        Store.add('transactions', {
+          id: Utils.uid(), type: 'income', date: sale.date,
+          category: `Flip Sale: ${flip.item}`,
+          amountCents: sale.unitPriceCents * qty,
+          note: `Sold ${qty} units of ${flip.item}`,
+          recurring: '', nextDueDate: null
+        });
+      }
+
+      $('#saleModal').classList.remove('show');
+      $('#saleForm').reset();
+      Render.all();
+    });
+  }
+
+  function bindSettleModal() {
+    $('#settleCancel').addEventListener('click', () => $('#settleModal').classList.remove('show'));
+    
+    document.addEventListener('click', e => {
+      if (e.target.dataset.settle) {
+        const debtId = e.target.dataset.settle;
+        const debt = Store.get().debts.find(d => d.id === debtId);
+        if (!debt) return;
+        
+        $('#settleForm').querySelector('[name=debtId]').value = debtId;
+        $('#settleForm').querySelector('[name=amount]').value = Utils.fromCents(debt.remainingAmountCents);
+        $('#settleForm').querySelector('[name=date]').value = Utils.todayISO();
+        $('#settleModal').classList.add('show');
+      }
+    });
+
+    $('#settleForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const fd = new FormData($('#settleForm'));
+      const debtId = fd.get('debtId');
+      const debt = Store.get().debts.find(d => d.id === debtId);
+      if (!debt) return;
+
+      const settleAmount = Utils.toCents(fd.get('amount'));
+      if (settleAmount > debt.remainingAmountCents) {
+        alert('Settlement amount cannot exceed remaining balance.'); return;
+      }
+
+      const newRemaining = debt.remainingAmountCents - settleAmount;
+      const paymentDate = fd.get('date');
+      Store.update('debts', debtId, { 
+        remainingAmountCents: newRemaining,
+        settled: newRemaining <= 0,
+        // FIX #8: record this settlement so it can be individually undone later.
+        payments: [...(debt.payments || []), { id: Utils.uid(), amountCents: settleAmount, date: paymentDate }]
+      });
+
+      if (fd.get('autoLedger') === 'on' && settleAmount > 0) {
+        Store.add('transactions', {
+          id: Utils.uid(), 
+          type: debt.dir === 'owed' ? 'income' : 'expense', 
+          date: fd.get('date'),
+          category: `Debt Settlement: ${debt.person}`,
+          amountCents: settleAmount,
+          note: `Partial/Full settlement of debt`,
+          recurring: '', nextDueDate: null
+        });
+      }
+
+      $('#settleModal').classList.remove('show');
+      $('#settleForm').reset();
+      Render.all();
+    });
+  }
+
+  function bindRecurring() {
+    const process = () => {
+      const s = Store.get();
+      const today = Utils.todayISO();
+      
+      const newTransactions = [];
+      // FIX #15: catch up ALL missed cycles in one click, not just one. Previously,
+      // a transaction overdue by several weeks/months only advanced one interval per
+      // click, so the "due" alert never cleared and the button looked broken.
+      const updatedTransactions = s.transactions.map(t => {
+        if (!(t.recurring && t.nextDueDate)) return t;
+        let due = t.nextDueDate;
+        let guard = 0;
+        while (due && due <= today && guard < 500) {
+          const newId = Utils.uid();
+          newTransactions.push({ ...t, id: newId, date: due, recurring: '', nextDueDate: null });
+          const next = new Date(due + 'T00:00:00');
+          if (t.recurring === 'weekly') next.setDate(next.getDate() + 7);
+          else if (t.recurring === 'monthly') next.setMonth(next.getMonth() + 1);
+          due = next.toISOString().slice(0, 10);
+          guard++;
+        }
+        return due === t.nextDueDate ? t : { ...t, nextDueDate: due };
+      });
+      
+      if (newTransactions.length > 0) {
+        Store.set({ transactions: [...updatedTransactions, ...newTransactions] });
+        Render.all();
+      }
+    };
+
+    $('#processRecurringBtn').addEventListener('click', process);
+    $('#processRecurringInline').addEventListener('click', process);
+  }
+
+  function bindProjectForm() {
+    const f = $('#projectForm');
+    f.addEventListener('submit', e => {
+      e.preventDefault();
+      const fd = new FormData(f);
+      const cost = Utils.toCents(fd.get('cost'));
+      const price = Utils.toCents(fd.get('price'));
+      const lead = Number(fd.get('lead')) || 0;
+      const tts = Number(fd.get('tts')) || 0;
+      
+      const bal = Accounting.getBalances();
+      const shortfall = cost - bal.carFundCents;
+      
+      const profit = price - cost;
+      const roi = cost > 0 ? (profit / cost) * 100 : 0;
+      const totalDays = lead + tts;
+      const perDay = totalDays > 0 ? profit / totalDays : profit;
+      
+      let warningHtml = '';
+      if (shortfall > 0) {
+        warningHtml = `<div class="alert" style="margin-bottom:8px"><span class="material-symbols-outlined" style="font-size:16px">warning</span> Insufficient capital. Shortfall: <b>${Utils.fmt(shortfall)}</b></div>`;
+      }
+      
+      const today = new Date();
+      const arrival = new Date(today); arrival.setDate(arrival.getDate() + lead);
+      const sold = new Date(arrival); sold.setDate(sold.getDate() + tts);
+      
+      $('#projectResult').innerHTML = `
+        ${warningHtml}
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:13px">
+          <div>Projected Profit: <b class="${profit >= 0 ? 'pos' : 'neg'}">${Utils.fmt(profit)}</b></div>
+          <div>ROI: <b>${roi.toFixed(1)}%</b></div>
+          <div>Total Cycle: <b>${totalDays} days</b></div>
+          <div>Profit/Day: <b>${Utils.fmt(perDay)}</b></div>
+          <div style="grid-column:1/-1; margin-top:8px; color:var(--ink-faint)">
+            Timeline: Order (Today) → Arrival (${arrival.toISOString().slice(0,10)}) → Sold (${sold.toISOString().slice(0,10)})
+          </div>
+        </div>`;
+    });
+  }
+
+  function bindGoalForm() {
+    const f = $('#goalForm');
+    f.addEventListener('submit', e => {
+      e.preventDefault();
+      const fd = new FormData(f);
+      const deadline = fd.get('deadline');
+      if (!Utils.parseDate(deadline)) { alert('Invalid deadline'); return; }
+      Store.set({ goal: {
+        label: fd.get('label').trim() || 'Car fund',
+        targetCents: Utils.toCents(fd.get('target')),
+        deadline
+      }});
+      Render.all();
+    });
+  }
+
+  function bindDelegated() {
+    document.addEventListener('click', e => {
+      // FIX #21: buttons now contain an icon <span> (added for Material Symbols).
+      // e.target can be that inner span rather than the button holding the
+      // data-* attributes, so climb up to the actual button first.
+      const t = e.target.closest('[data-del],[data-edit],[data-unsettle]');
+      if (!t) return;
+      if (t.dataset.del) {
+        modal('Delete?', 'This cannot be undone.').then(ok => {
+          if (!ok) return;
+          // FIX #10: deleting a flip also removes the ledger expense it auto-created,
+          // so you don't end up with an orphaned "Flip: X" expense for a flip that no longer exists.
+          if (t.dataset.del === 'flips') {
+            const flip = Store.get().flips.find(f => f.id === t.dataset.id);
+            if (flip && flip.linkedTxId) Store.remove('transactions', flip.linkedTxId);
+          }
+          Store.remove(t.dataset.del, t.dataset.id);
+          Render.all();
+        });
+      } else if (t.dataset.edit) {
+        const coll = t.dataset.edit;
+        const id = t.dataset.id;
+        const item = Store.get()[coll].find(x => x.id === id);
+        if (!item) return;
+        
+        if (coll === 'transactions') setEditMode('txForm', item);
+        if (coll === 'debts') setEditMode('debtForm', item);
+        if (coll === 'budgets') setEditMode('budgetForm', item);
+        if (coll === 'flips') setEditMode('flipForm', item);
+        
+        document.getElementById(`view-${coll === 'transactions' ? 'ledger' : coll}`).scrollIntoView({ behavior: 'smooth' });
+      } else if (t.dataset.unsettle) {
+        // FIX #8: reopening undoes the LAST recorded settlement only, so earlier
+        // partial payments (and their Ledger entries) aren't silently erased.
+        // Legacy debts with no payment history fall back to the old behavior.
+        const debt = Store.get().debts.find(d => d.id === t.dataset.unsettle);
+        const payments = debt.payments || [];
+        if (payments.length > 0) {
+          const lastPayment = payments[payments.length - 1];
+          Store.update('debts', t.dataset.unsettle, {
+            settled: false,
+            remainingAmountCents: debt.remainingAmountCents + lastPayment.amountCents,
+            payments: payments.slice(0, -1)
+          });
+        } else {
+          Store.update('debts', t.dataset.unsettle, { 
+            settled: false, 
+            remainingAmountCents: debt.originalAmountCents
+          }); 
+        }
+        Render.people(); Render.dashboard();
+      }
+    });
+    
+    $('#showSettled').addEventListener('change', e => {
+      Store.set({ ui: { ...Store.get().ui, showSettled: e.target.checked } });
+      Render.people();
+    });
+  }
+
+  function bindSettings() {
+    $('#openingBalanceInput').value = Utils.fromCents(Store.get().openingBalanceCents || 0);
+    $('#saveOpeningBalanceBtn').addEventListener('click', () => {
+      const cents = Utils.toCents($('#openingBalanceInput').value);
+      Store.set({ openingBalanceCents: cents });
+      Render.all();
+    });
+
+    $('#exportBtn').addEventListener('click', () => {
+      const blob = new Blob([JSON.stringify(Store.get(), null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `garage-fund-v6.0-${Utils.todayISO()}.json`;
+      a.click();
+      try { localStorage.setItem('garageFund.lastExport', new Date().toISOString()); } catch(e){}
+      const nag = document.getElementById('backupNag'); if (nag) nag.hidden = true;
+    });
+    $('#importBtn').addEventListener('click', () => $('#importFile').click());
+    $('#importFile').addEventListener('change', async e => {
+      const file = e.target.files[0]; if (!file) return;
+      const ok = await modal('Import data?', 'This will replace everything in this browser. A safety snapshot of your current data is saved automatically so you can recover if this was the wrong file.');
+      if (!ok) { e.target.value = ''; return; }
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        if (!data.transactions || !Array.isArray(data.transactions)) throw new Error('Invalid schema');
+        // Auto-backup current state before overwriting so a wrong-file mistake is recoverable.
+        try {
+          const stamp = new Date().toISOString().replace(/[:.]/g,'-');
+          const current = localStorage.getItem('garageFund.v5.1');
+          if (current) localStorage.setItem('garageFund.preImport.' + stamp, current);
+          // Keep only the 3 most-recent pre-import snapshots to avoid quota bloat.
+          const keys = Object.keys(localStorage).filter(k => k.startsWith('garageFund.preImport.')).sort();
+          while (keys.length > 3) { localStorage.removeItem(keys.shift()); }
+        } catch(err){ console.warn('Pre-import backup skipped', err); }
+        Storage.save(data);
+        location.reload();
+      } catch (err) {
+        alert('Invalid JSON file or corrupted schema: ' + err.message);
+      }
+      e.target.value = '';
+    });
+    $('#clearBtn').addEventListener('click', async () => {
+      const ok = await modal('Clear all data?', 'This deletes every transaction, debt, flip, and budget. Cannot be undone.');
+      if (ok) { Storage.clear(); location.reload(); }
+    });
+  }
+
+  function bindSheinForm() {
+    $('#sheinForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const f = e.target;
+      const date = f.date.value;
+      const amountRandCents = Utils.toCents(f.amount.value);
+      const note = f.note.value.trim();
+      if (!date || !amountRandCents) return;
+      Store.add('sheinEarnings', { id: Utils.uid(), date, amountRandCents, note, paidTxId: null, paidUsdCents: null, paidDate: null });
+      f.reset(); f.date.value = Utils.todayISO();
+      Render.all();
+    });
+    document.getElementById('sheinForm').date.value = Utils.todayISO();
+
+    $('#sheinCard').addEventListener('click', e => {
+      const payBtn = e.target.closest('[data-shein-paid]');
+      if (!payBtn) return;
+      const id = payBtn.dataset.sheinPaid;
+      const entry = Store.get().sheinEarnings.find(x => x.id === id);
+      if (!entry) return;
+      const usdStr = prompt(`Amount actually received in USD for ${Utils.fmtZAR(entry.amountRandCents)} (once it lands in your bank)?`, '');
+      if (usdStr === null) return;
+      const usdCents = Utils.toCents(usdStr);
+      if (!usdCents) return;
+      const paidDate = Utils.todayISO();
+      const txId = Utils.uid();
+      Store.add('transactions', {
+        id: txId, type: 'income', date: paidDate, category: 'Shein Affiliate',
+        amountCents: usdCents, note: `Payout for ${Utils.fmtZAR(entry.amountRandCents)} earned ${entry.date}`,
+        recurring: '', nextDueDate: null
+      });
+      Store.update('sheinEarnings', id, { paidTxId: txId, paidUsdCents: usdCents, paidDate });
+      Render.all();
+    });
+  }
+
+  function checkBackupNag() {
+    const nag = document.getElementById('backupNag');
+    if (!nag) return;
+    let lastExport;
+    try { lastExport = localStorage.getItem('garageFund.lastExport'); } catch(e){}
+    const hasData = (Store.get().transactions || []).length > 0;
+    if (!hasData) { nag.hidden = true; return; }
+    const stale = !lastExport || (Date.now() - new Date(lastExport).getTime()) > 30 * 24 * 60 * 60 * 1000;
+    nag.hidden = !stale;
+  }
+
+  function init() {
+    bindTabs(); bindTxForm(); bindLedgerFilters(); bindDebtForm();
+    bindBudgetForm(); bindFlipForm(); bindSaleModal(); bindSettleModal();
+    bindRecurring(); bindProjectForm(); bindGoalForm();
+    bindDelegated(); bindSettings(); bindSheinForm();
+
+    const nagBtn = document.getElementById('backupNagExport');
+    if (nagBtn) nagBtn.addEventListener('click', () => document.getElementById('exportBtn').click());
+    checkBackupNag();
+
+    const tab = Store.get().ui.tab || 'dashboard';
+    document.querySelector(`#tabs button[data-tab="${tab}"]`).click();
+    $('#showSettled').checked = !!Store.get().ui.showSettled;
+    $('#schemaVersionDisplay').textContent = Store.get().schemaVersion || 5.5;
+  }
+  return { init };
+})();
+
+Events.init();
+Render.all();
+</script>
+
+
+<script>
+(function(){
+  'use strict';
+  const $ = s => document.querySelector(s);
+  const $$ = s => Array.from(document.querySelectorAll(s));
+  const STORE_KEY = 'studyCommandCenterV1';
+
+  // ---------- Utils ----------
+  const Utils = {
+    uid(){ return Math.random().toString(36).slice(2,10) + Date.now().toString(36).slice(-4); },
+    todayISO(){ return new Date().toISOString().slice(0,10); },
+    daysBetween(fromISO, toISO){
+      const a = new Date(fromISO+'T00:00:00'); const b = new Date(toISO+'T00:00:00');
+      return Math.round((b-a)/86400000);
+    },
+    fmtDate(iso){
+      if(!iso) return '—';
+      const d = new Date(iso+'T00:00:00');
+      return d.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});
+    },
+    clamp(n,min,max){ return Math.max(min,Math.min(max,n)); },
+    escape(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  };
+
+  // ---------- Default data ----------
+  const CODESYS_LESSONS = [
+    ['How to Install CODESYS V3.5 for Beginners | #Tutorial 1','https://www.youtube.com/watch?v=eZGPXdf0Tl0'],
+    ['How to Create a Project & Visualization in Codesys | #Tutorial','https://www.youtube.com/watch?v=Y2jYQ5tPZ18'],
+    ['Normally open/closed pushbutton & Normal/negated contacts in Codesys | #Tutorial 3','https://www.youtube.com/watch?v=eG_eMUGwrCo'],
+    ['Codesys #4: Set/Reset Coil & SR/RS Function in Codesys','https://www.youtube.com/watch?v=KYPRHRYNthQ'],
+    ['Codesys #5: Timers (TP,TON,TOF) in Codesys with Ladder Logic','https://www.youtube.com/watch?v=gy2CScjw7kc'],
+    ['Codesys #6: How to use counters (CTU / CTD / CTUD) in Codesys using Ladder Logic','https://www.youtube.com/watch?v=hp1XHPHPd38'],
+    ['Codesys #7: F-Trigger & R-Trigger (Falling & Rising Trigger) in Codesys','https://www.youtube.com/watch?v=1lXMATagRzo'],
+    ['Codesys #8: Identifier & Comment in Codesys','https://www.youtube.com/watch?v=_e-kGUqEr9A'],
+    ['How to Flash a Lamp Using Timers in CODESYS | #Tutorial 9','https://www.youtube.com/watch?v=iyv0fGhpj3E'],
+    ['How to Use Local and Global Variables in CODESYS | #Tutorial 10','https://www.youtube.com/watch?v=tmp-xq8qkNU'],
+    ['How to Use Move and Jump Instructions in CODESYS | Ladder Logic | #Tutorial 11','https://www.youtube.com/watch?v=L26wFchOL9w'],
+    ['Data Types in CODESYS | BOOL, INT, REAL, STRING and String Functions | #Tutorial 12','https://www.youtube.com/watch?v=CvtUuKeCeQk'],
+    ['How to read and write date and time of a PLC using Systime | #Tutorial 13','https://www.youtube.com/watch?v=-W-s5fQU76M'],
+    ['Structured Text (ST) in CODESYS | Basics, Syntax, and Assignment | Tutorial #14','https://www.youtube.com/watch?v=L2WOfjKDgYg'],
+    ['Self-Holding, Set/Reset, and SR/RS in CODESYS ST | Explained for Beginners | Tutorial #15','https://www.youtube.com/watch?v=MLsgFp5nRKk'],
+    ['Timers and Counters in CODESYS ST | TP, TON, TOF and Counter Basics | Tutorial #16','https://www.youtube.com/watch?v=YD5_kgwj2Ws'],
+    ['Arrays in CODESYS | How to Declare, Initialize, and Use Them | Tutorial #17','https://www.youtube.com/watch?v=S5pp0eWVjls'],
+    ['Structures in CODESYS | How to Declare, Initialize, and Use Them | Tutorial #18','https://www.youtube.com/watch?v=rbqYMRTcNHM'],
+    ['Enumeration in CODESYS | How to Declare, Initialize, and Use Enums | Tutorial #19','https://www.youtube.com/watch?v=jWSQme0n-sQ'],
+    ['How to Use Shift and Rotate in Codesys | Bottle Filling Example | Tutorial #20','https://www.youtube.com/watch?v=6QSqyCYOhQA'],
+    ['How to Use Retain & Persistent Variables in CODESYS | Tutorial #21','https://www.youtube.com/watch?v=9W52kMcAdjM'],
+    ['How to Use Program Organization Units (POU) in Codesys | Tutorial #22','https://www.youtube.com/watch?v=RkoxMqadbWQ'],
+    ['How to Use IF Statements in CODESYS | Traffic Light Example | Tutorial #23','https://www.youtube.com/watch?v=AJwPRsziv6w'],
+    ['How to Create a Visualization in Codesys | Switch, Button & Lamp | Tutorial #24','https://www.youtube.com/watch?v=scnzn06n9bE'],
+    ['How to Display Dynamic Values in Codesys Visualization | Tutorial #25','https://www.youtube.com/watch?v=yI1uZkTa-hU'],
+    ['How to Move & Rotate Objects in Codesys Visualization | Tutorial #26','https://www.youtube.com/watch?v=CyYLpwWhD9Y'],
+    ['How to Use Combo Box in Codesys Visualization | Tutorial #27','https://www.youtube.com/watch?v=8jam4fojyOo'],
+    ['How to Create a Real-Time Trend in CODESYS HMI | PLC Monitoring','https://www.youtube.com/watch?v=nLNRxUEcTA4'],
+    ['CODESYS Trace Tutorial | Capture Fast 5 ms Pulses in visualization','https://www.youtube.com/watch?v=crufYhd_hmM']
+  ];
+  function defaultLessons(){
+    return CODESYS_LESSONS.map(([name,url]) => ({ id: Utils.uid(), name, url, done:false, notes:'' }));
+  }
+
+  // Standard 66-book Protestant canon, [book name, chapter count]
+  const BIBLE_BOOKS = [
+    ['Genesis',50],['Exodus',40],['Leviticus',27],['Numbers',36],['Deuteronomy',34],
+    ['Joshua',24],['Judges',21],['Ruth',4],['1 Samuel',31],['2 Samuel',24],
+    ['1 Kings',22],['2 Kings',25],['1 Chronicles',29],['2 Chronicles',36],['Ezra',10],
+    ['Nehemiah',13],['Esther',10],['Job',42],['Psalms',150],['Proverbs',31],
+    ['Ecclesiastes',12],['Song of Solomon',8],['Isaiah',66],['Jeremiah',52],['Lamentations',5],
+    ['Ezekiel',48],['Daniel',12],['Hosea',14],['Joel',3],['Amos',9],
+    ['Obadiah',1],['Jonah',4],['Micah',7],['Nahum',3],['Habakkuk',3],
+    ['Zephaniah',3],['Haggai',2],['Zechariah',14],['Malachi',4],
+    ['Matthew',28],['Mark',16],['Luke',24],['John',21],['Acts',28],
+    ['Romans',16],['1 Corinthians',16],['2 Corinthians',13],['Galatians',6],['Ephesians',6],
+    ['Philippians',4],['Colossians',4],['1 Thessalonians',5],['2 Thessalonians',3],['1 Timothy',6],
+    ['2 Timothy',4],['Titus',3],['Philemon',1],['Hebrews',13],['James',5],
+    ['1 Peter',5],['2 Peter',3],['1 John',5],['2 John',1],['3 John',1],
+    ['Jude',1],['Revelation',22]
+  ];
+  const BIBLE_CHAPTERS = BIBLE_BOOKS.flatMap(([book,count]) => Array.from({length:count},(_,i)=> book+' '+(i+1)));
+  function defaultData(){
+    return {
+      schemaVersion: 1,
+      exams: {
+        pmp: { name:'PMP', targetDate:'', notes:'', milestones: [
+          {id:Utils.uid(), text:'Read through the PMBOK / ECO domains', done:false},
+          {id:Utils.uid(), text:'People domain review', done:false},
+          {id:Utils.uid(), text:'Process domain review', done:false},
+          {id:Utils.uid(), text:'Business Environment domain review', done:false},
+          {id:Utils.uid(), text:'First full-length practice exam', done:false},
+          {id:Utils.uid(), text:'Review weak areas from practice exam', done:false},
+          {id:Utils.uid(), text:'Second full-length practice exam (target score)', done:false},
+          {id:Utils.uid(), text:'Book exam date / eligibility application', done:false},
+        ]},
+        pte: { name:'PTE Academic', targetDate:'', notes:'', milestones: [
+          {id:Utils.uid(), text:'Diagnostic / baseline mock test', done:false},
+          {id:Utils.uid(), text:'Speaking & Writing: Read Aloud, Repeat Sentence, Describe Image, Retell Lecture', done:false},
+          {id:Utils.uid(), text:'Speaking & Writing: Answer Short Q, Summarize Group Discussion, Respond to Situation', done:false},
+          {id:Utils.uid(), text:'Speaking & Writing: Summarize Written Text, Write Essay', done:false},
+          {id:Utils.uid(), text:'Reading: Fill in Blanks (dropdown & drag-drop), Reorder Paragraph', done:false},
+          {id:Utils.uid(), text:'Reading: Multiple Choice (single & multiple answer)', done:false},
+          {id:Utils.uid(), text:'Listening: Summarize Spoken Text, Fill in Blanks, Write from Dictation', done:false},
+          {id:Utils.uid(), text:'Listening: MC (single & multiple), Highlight Summary/Incorrect Words, Select Missing Word', done:false},
+          {id:Utils.uid(), text:'Timed full mock test #1', done:false},
+          {id:Utils.uid(), text:'Review scored feedback / weak items', done:false},
+          {id:Utils.uid(), text:'Timed full mock test #2 (target score)', done:false},
+          {id:Utils.uid(), text:'Book official exam slot', done:false},
+        ]}
+      },
+      codesys: {
+        playlistUrl: 'https://www.youtube.com/playlist?list=PLOgpNa2QKknTM97Wp5YCNbd5DI4IN5w7R',
+        lessons: defaultLessons()
+      },
+      reading: {
+        currentBook: 'The 5AM Club — Robin Sharma',
+        shelf: [],
+        logs: [],
+        bible: { completed: 0, log: [] }
+      },
+      todos: {
+        categories: ['PMP','PTE Academic','CODESYS','Reading','Work','Hobbies','Other'],
+        tasks: []
+      },
+      ui: { tab: 'dashboard' }
+    };
+  }
+
+  // ---------- Storage ----------
+  const Storage = {
+    load(){
+      try{
+        const raw = localStorage.getItem(STORE_KEY);
+        if(!raw) return defaultData();
+        const parsed = JSON.parse(raw);
+        // shallow-merge defaults for any missing top-level keys (forward compatibility)
+        const base = defaultData();
+        return Object.assign({}, base, parsed, {
+          exams: Object.assign({}, base.exams, parsed.exams),
+          codesys: Object.assign({}, base.codesys, parsed.codesys),
+          reading: Object.assign({}, base.reading, parsed.reading),
+          todos: Object.assign({}, base.todos, parsed.todos),
+          ui: Object.assign({}, base.ui, parsed.ui)
+        });
+      }catch(e){ console.error('Load failed, resetting', e); return defaultData(); }
+    },
+    save(data){ localStorage.setItem(STORE_KEY, JSON.stringify(data)); },
+    clear(){ localStorage.removeItem(STORE_KEY); }
+  };
+
+  let DATA = Storage.load();
+  const Store = {
+    get(){ return DATA; },
+    set(patch){ DATA = Object.assign({}, DATA, patch); Storage.save(DATA); },
+    save(){ Storage.save(DATA); }
+  };
+
+  // ---------- Modal (confirm) ----------
+  function modal(title, body){
+    return new Promise(resolve => {
+      $('#scModalTitle').textContent = title;
+      $('#scModalBody').textContent = body;
+      $('#scModalBack').classList.add('show');
+      const cleanup = (val) => { $('#scModalBack').classList.remove('show'); ok.removeEventListener('click',onOk); cancel.removeEventListener('click',onCancel); resolve(val); };
+      const ok = $('#scModalOk'), cancel = $('#scModalCancel');
+      const onOk = () => cleanup(true);
+      const onCancel = () => cleanup(false);
+      ok.addEventListener('click',onOk); cancel.addEventListener('click',onCancel);
+    });
+  }
+
+  // ---------- Gauge (semi-circle SVG) ----------
+  function gaugeSVG(pct, color, size){
+    pct = Utils.clamp(pct,0,100);
+    const r = 70, cx = 90, cy = 90, stroke = 14;
+    const circ = Math.PI * r; // half circumference for semicircle
+    const offset = circ * (1 - pct/100);
+    return `
+      <svg viewBox="0 0 180 100" style="overflow:visible">
+        <path d="M 20 90 A 70 70 0 0 1 160 90" fill="none" stroke="var(--md-surface-highest)" stroke-width="${stroke}" stroke-linecap="round"/>
+        <path d="M 20 90 A 70 70 0 0 1 160 90" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round"
+          stroke-dasharray="${circ}" stroke-dashoffset="${offset}"/>
+      </svg>`;
+  }
+
+  // ---------- Render ----------
+  const Render = {
+    all(){
+      Render.dashboard();
+      Render.exams();
+      Render.codesys();
+      Render.reading();
+      Render.bible();
+      Render.todo();
+    },
+
+    // ===== Dashboard =====
+    dashboard(){
+      const d = Store.get();
+      const today = Utils.todayISO();
+
+      // Alerts
+      const alerts = [];
+      const lastLog = d.reading.logs.slice().sort((a,b)=>a.date<b.date?1:-1)[0];
+      if(!lastLog || lastLog.date !== today){
+        alerts.push(`<div class="alert"><div class="alert-text"><span class="material-symbols-outlined">auto_stories</span>You haven't logged reading today — even 10 minutes of "${Utils.escape(d.reading.currentBook||'your book')}" counts.</div><button class="btn small primary" data-goto="reading">Log it</button></div>`);
+      }
+      ['pmp','pte'].forEach(k=>{
+        const e = d.exams[k];
+        if(e.targetDate){
+          const days = Utils.daysBetween(today, e.targetDate);
+          if(days>=0 && days<=7){
+            alerts.push(`<div class="alert"><div class="alert-text"><span class="material-symbols-outlined">alarm</span>${Utils.escape(e.name)} is ${days===0?'today':`in ${days} day${days===1?'':'s'}`} — final review time.</div></div>`);
+          }
+        }
+      });
+      $('#dashAlerts').innerHTML = alerts.join('') || '';
+      $$('[data-goto]').forEach(b=> b.addEventListener('click', ()=> document.querySelector(`#scTabs button[data-tab="${b.dataset.goto}"]`).click()));
+
+      // Exam gauges (PMP, PTE) + Codesys + Reading mini gauges as 4 stat cards
+      const gauges = [];
+      ['pmp','pte'].forEach(k=>{
+        const e = d.exams[k];
+        let label, pct, sub;
+        const doneCount = e.milestones.filter(m=>m.done).length;
+        pct = e.milestones.length ? Math.round(100*doneCount/e.milestones.length) : 0;
+        if(e.targetDate){
+          const days = Utils.daysBetween(today, e.targetDate);
+          label = days<0 ? `${Math.abs(days)}d overdue` : `${days}d left`;
+        } else { label = 'no date set'; }
+        sub = `${doneCount}/${e.milestones.length} milestones`;
+        gauges.push(`<div class="card"><h3><span class="dot"></span>${Utils.escape(e.name)}</h3>
+          <div class="gauge-wrap">${gaugeSVG(pct,'var(--md-primary)')}
+            <div class="gauge-label"><div class="n">${label}</div><div class="s">${sub}</div></div>
+          </div></div>`);
+      });
+      const cLessons = d.codesys.lessons;
+      const cDone = cLessons.filter(l=>l.done).length;
+      const cPct = cLessons.length ? Math.round(100*cDone/cLessons.length) : 0;
+      gauges.push(`<div class="card"><h3><span class="dot"></span>CODESYS</h3>
+        <div class="gauge-wrap">${gaugeSVG(cPct,'var(--md-info)')}
+          <div class="gauge-label"><div class="n">${cPct}%</div><div class="s">${cDone}/${cLessons.length} lessons</div></div>
+        </div></div>`);
+      const streak = computeStreak(d.reading.logs);
+      gauges.push(`<div class="card"><h3><span class="dot"></span>Reading Streak</h3>
+        <div class="gauge-wrap">${gaugeSVG(Math.min(streak*10,100),'var(--md-success)')}
+          <div class="gauge-label"><div class="n">${streak}🔥</div><div class="s">day streak</div></div>
+        </div></div>`);
+      const bible = d.reading.bible;
+      const bTotal = BIBLE_CHAPTERS.length;
+      const bCompleted = Utils.clamp(bible.completed, 0, bTotal);
+      const bPct = Math.round(100*bCompleted/bTotal);
+      const bDistinctDays = new Set(bible.log.map(l=>l.date)).size;
+      const bAvgPerDay = bDistinctDays > 0 ? (bCompleted / bDistinctDays) : 1;
+      const bRemaining = bTotal - bCompleted;
+      const bDaysLeft = bAvgPerDay > 0 ? Math.ceil(bRemaining / bAvgPerDay) : bRemaining;
+      gauges.push(`<div class="card"><h3><span class="dot"></span>Bible</h3>
+        <div class="gauge-wrap">${gaugeSVG(bPct,'var(--md-primary)')}
+          <div class="gauge-label"><div class="n">${bDaysLeft}d left</div><div class="s">${bCompleted}/${bTotal} chapters</div></div>
+        </div></div>`);
+      $('#examGauges').innerHTML = gauges.join('');
+
+      // Codesys mini
+      $('#dashCodesys').innerHTML = `
+        <div class="progress"><i style="width:${cPct}%"></i></div>
+        <p style="color:var(--md-on-surface-variant); margin:10px 0 0">${cDone} of ${cLessons.length} lessons watched (${cPct}%).</p>`;
+
+      // Bible mini
+      const bFinishDate = new Date(); bFinishDate.setDate(bFinishDate.getDate() + bDaysLeft);
+      $('#dashBible').innerHTML = `
+        <div class="progress"><i style="width:${bPct}%"></i></div>
+        <p style="color:var(--md-on-surface-variant); margin:10px 0 0">${bCompleted} of ${bTotal} chapters (${bPct}%).</p>
+        ${bRemaining>0 ? `<p style="color:var(--md-on-surface-variant); margin:4px 0 0">${bAvgPerDay.toFixed(1)} ch/day pace → ${bDaysLeft}d left, around ${Utils.fmtDate(bFinishDate.toISOString().slice(0,10))}.</p>` : `<p style="color:var(--md-success); margin:4px 0 0">Finished! 🎉</p>`}`;
+
+      // Reading mini
+      $('#dashReading').innerHTML = readingStreakHTML(d.reading.logs);
+
+      // Today's todo
+      const openTasks = d.todos.tasks.filter(t=>!t.done);
+      $('#dashTodoSub').textContent = `${openTasks.length} open task${openTasks.length===1?'':'s'}`;
+      $('#dashTodoList').innerHTML = openTasks.length ? openTasks.slice(0,12).map(t=>todoRowHTML(t)).join('') : '<div class="empty">Nothing pending — nice.</div>';
+    },
+
+    // ===== PMP / PTE (each its own tab, styled like CODESYS) =====
+    exams(){
+      const d = Store.get();
+      ['pmp','pte'].forEach(key=>{
+        const prefix = key; // 'pmp' or 'pte'
+        const e = d.exams[key];
+        const doneCount = e.milestones.filter(m=>m.done).length;
+        const pct = e.milestones.length ? Math.round(100*doneCount/e.milestones.length) : 0;
+        const firstOpen = e.milestones.find(m=>!m.done);
+        const today = Utils.todayISO();
+        let dayLabel = 'no date set';
+        if(e.targetDate){
+          const days = Utils.daysBetween(today, e.targetDate);
+          dayLabel = days<0 ? `${Math.abs(days)}d overdue` : `${days}d left`;
+        }
+        document.getElementById(prefix+'Progress').innerHTML = `
+          <div class="gauge-wrap">${gaugeSVG(pct,'var(--md-primary)')}
+            <div class="gauge-label"><div class="n">${dayLabel}</div><div class="s">${doneCount}/${e.milestones.length} milestones · ${pct}%</div></div>
+          </div>
+          ${firstOpen ? `<p style="text-align:center; color:var(--md-primary)">Next: ${Utils.escape(firstOpen.text)}</p>` : e.milestones.length ? '<p style="text-align:center; color:var(--md-success)">All milestones done 🎉</p>' : ''}`;
+        document.getElementById(prefix+'DateInput').value = e.targetDate || '';
+        document.getElementById(prefix+'Notes').value = e.notes || '';
+        document.getElementById(prefix+'MilestoneList').innerHTML = e.milestones.map((m,i) => `
+          <div class="lesson-row ${m.done?'done':''}">
+            <input type="checkbox" data-exam="${key}" data-milestone="${m.id}" ${m.done?'checked':''}/>
+            <div class="name">${i+1}. ${Utils.escape(m.text)}</div>
+            <button class="icon" data-exam-del="${key}" data-milestone-del="${m.id}"><span class="material-symbols-outlined">delete</span></button>
+          </div>`).join('') || '<div class="empty">No milestones yet.</div>';
+      });
+    },
+
+    // ===== CODESYS =====
+    codesys(){
+      const d = Store.get();
+      $('#codesysPlaylistLink').href = d.codesys.playlistUrl;
+      const lessons = d.codesys.lessons;
+      const doneCount = lessons.filter(l=>l.done).length;
+      const pct = lessons.length ? Math.round(100*doneCount/lessons.length) : 0;
+      const firstUnwatched = lessons.find(l=>!l.done);
+      $('#codesysProgress').innerHTML = `
+        <div class="gauge-wrap">${gaugeSVG(pct,'var(--md-info)')}
+          <div class="gauge-label"><div class="n">${pct}%</div><div class="s">${doneCount}/${lessons.length} lessons</div></div>
+        </div>
+        ${firstUnwatched ? `<p style="text-align:center; color:var(--md-info)">Resume: ${firstUnwatched.url ? `<a href="${Utils.escape(firstUnwatched.url)}" target="_blank" rel="noopener">${Utils.escape(firstUnwatched.name)}</a>` : Utils.escape(firstUnwatched.name)}</p>` : '<p style="text-align:center; color:var(--md-success)">All lessons watched 🎉</p>'}`;
+      $('#codesysLessonList').innerHTML = lessons.map((l,i) => `
+        <div class="lesson-row ${l.done?'done':''}">
+          <input type="checkbox" data-lesson="${l.id}" ${l.done?'checked':''}/>
+          <div class="name">${i+1}. ${Utils.escape(l.name)}</div>
+          ${l.url ? `<a class="icon" href="${Utils.escape(l.url)}" target="_blank" rel="noopener" title="Watch on YouTube"><span class="material-symbols-outlined">play_circle</span></a>` : ''}
+          <button class="icon" data-lesson-rename="${l.id}"><span class="material-symbols-outlined">edit</span></button>
+          <button class="icon" data-lesson-del="${l.id}"><span class="material-symbols-outlined">delete</span></button>
+        </div>`).join('') || '<div class="empty">No lessons yet.</div>';
+    },
+
+    // ===== Reading =====
+    reading(){
+      const d = Store.get();
+      $('#readingCurrentBook').value = d.reading.currentBook || '';
+      $('#readingStreakBox').innerHTML = readingStreakHTML(d.reading.logs);
+      const logs = d.reading.logs.slice().sort((a,b)=> a.date<b.date?1:-1);
+      $('#readingLogTable').innerHTML = logs.length ? `
+        <table><thead><tr><th>Date</th><th>Minutes</th><th>Note</th><th></th></tr></thead><tbody>
+        ${logs.map(l=>`<tr><td>${Utils.fmtDate(l.date)}</td><td>${l.minutes||0}</td><td>${Utils.escape(l.note||'')}</td>
+          <td><button class="icon" data-readinglog-del="${l.id}"><span class="material-symbols-outlined">delete</span></button></td></tr>`).join('')}
+        </tbody></table>` : '<div class="empty">No reading logged yet — start today.</div>';
+      $('#shelfList').innerHTML = d.reading.shelf.length ? d.reading.shelf.map(b=>`
+        <div class="todo-row"><div class="txt">${Utils.escape(b.title)}</div>
+          <button class="btn ghost small" data-shelf-start="${b.id}">Start reading</button>
+          <button class="icon" data-shelf-del="${b.id}"><span class="material-symbols-outlined">delete</span></button>
+        </div>`).join('') : '<div class="empty">Queue is empty.</div>';
+    },
+
+    // ===== Bible =====
+    bible(){
+      const d = Store.get();
+      const bible = d.reading.bible;
+      const total = BIBLE_CHAPTERS.length;
+      const completed = Utils.clamp(bible.completed, 0, total);
+      const pct = Math.round(100*completed/total);
+      const next = BIBLE_CHAPTERS[completed];
+      const box = document.getElementById('bibleTodayBox');
+      if (box) box.innerHTML = next ? `
+        <div style="text-align:center; padding:8px 0">
+          <div style="font:400 30px 'Roboto'; color:var(--md-primary)">${Utils.escape(next)}</div>
+          <p style="color:var(--md-on-surface-variant); margin:6px 0 16px">Chapter ${completed+1} of ${total}</p>
+          <div class="row" style="justify-content:center; max-width:220px; margin:0 auto 12px">
+            <div><label style="text-align:center">Chapters today</label><input id="bibleCount" type="number" min="1" value="1"/></div>
+          </div>
+          <button class="btn primary" id="bibleMarkRead"><span class="material-symbols-outlined">check</span>Mark as Read</button>
+          ${completed>0 ? `<button class="btn ghost small" id="bibleUndo" style="margin-left:8px">Undo last</button>` : ''}
+        </div>` : `<div style="text-align:center; padding:20px 0"><div style="font:400 20px 'Roboto'; color:var(--md-success)">You've read the whole Bible 🎉</div></div>`;
+
+      // Pace analysis: use actual average chapters/day from log history, not a flat 1/day assumption
+      const distinctDays = new Set(bible.log.map(l=>l.date)).size;
+      const avgPerDay = distinctDays > 0 ? (completed / distinctDays) : 1;
+      const remaining = total - completed;
+      const daysLeftAtPace = avgPerDay > 0 ? Math.ceil(remaining / avgPerDay) : remaining;
+      const finishDateAtPace = new Date(); finishDateAtPace.setDate(finishDateAtPace.getDate() + daysLeftAtPace);
+      const finishDate1x = new Date(); finishDate1x.setDate(finishDate1x.getDate() + remaining);
+      const progressBox = document.getElementById('bibleProgressBox');
+      if (progressBox) progressBox.innerHTML = `
+        <div class="progress"><i style="width:${pct}%"></i></div>
+        <p style="color:var(--md-on-surface-variant); margin:10px 0 0">${completed} of ${total} chapters (${pct}%).</p>
+        ${remaining>0 ? `
+        <div class="stat" style="margin-top:12px">
+          <div class="k">Your pace</div>
+          <div class="v">${avgPerDay.toFixed(1)} ch/day</div>
+          <div class="s">based on ${distinctDays} day${distinctDays===1?'':'s'} of reading logged</div>
+        </div>
+        <p style="color:var(--md-on-surface-variant); margin:10px 0 0">At that pace, ${daysLeftAtPace} day${daysLeftAtPace===1?'':'s'} left — around <b>${Utils.fmtDate(finishDateAtPace.toISOString().slice(0,10))}</b>.</p>
+        <p style="color:var(--ink-faint); margin:4px 0 0; font-size:12px">(At exactly one chapter a day it would be ${Utils.fmtDate(finishDate1x.toISOString().slice(0,10))}.)</p>` : ''}`;
+
+      const recentLog = bible.log.slice().sort((a,b)=> a.date<b.date?1:-1).slice(0,10);
+      const logTable = document.getElementById('bibleLogTable');
+      if (logTable) logTable.innerHTML = recentLog.length ? `
+        <table><thead><tr><th>Date</th><th>Chapter</th></tr></thead><tbody>
+        ${recentLog.map(l=>`<tr><td>${Utils.fmtDate(l.date)}</td><td>${Utils.escape(l.chapter)}</td></tr>`).join('')}
+        </tbody></table>` : '<div class="empty">Nothing read yet — start with Genesis 1.</div>';
+    },
+
+    // ===== To-Do =====
+    todo(){
+      const d = Store.get();
+      const sel = $('#todoNewCategory');
+      sel.innerHTML = d.todos.categories.map(c=>`<option value="${Utils.escape(c)}">${Utils.escape(c)}</option>`).join('');
+      const byCat = {};
+      d.todos.categories.forEach(c=> byCat[c] = []);
+      d.todos.tasks.forEach(t=> { if(!byCat[t.category]) byCat[t.category]=[]; byCat[t.category].push(t); });
+      const blocks = d.todos.categories.map(cat=>{
+        const tasks = (byCat[cat]||[]).slice().sort((a,b)=> (a.done - b.done) || (a.createdAt<b.createdAt?-1:1));
+        const openCount = tasks.filter(t=>!t.done).length;
+        return `<div class="card" style="margin-bottom:14px">
+          <h3><span class="dot"></span>${Utils.escape(cat)}<span class="tag cat" style="margin-left:auto">${openCount} open</span></h3>
+          <div>${tasks.length ? tasks.map(t=>todoRowHTML(t)).join('') : '<div class="empty">Nothing here yet.</div>'}</div>
+        </div>`;
+      });
+      $('#todoByCategory').innerHTML = blocks.join('');
+    }
+  };
+
+  function todoRowHTML(t){
+    return `<div class="todo-row ${t.done?'done':''}">
+      <input type="checkbox" data-todo-toggle="${t.id}" ${t.done?'checked':''}/>
+      <div class="txt">${Utils.escape(t.text)} <span class="tag cat">${Utils.escape(t.category)}</span></div>
+      <button class="icon" data-todo-del="${t.id}"><span class="material-symbols-outlined">delete</span></button>
+    </div>`;
+  }
+
+  function computeStreak(logs){
+    const dates = new Set(logs.map(l=>l.date));
+    let streak = 0;
+    let cur = new Date();
+    while(true){
+      const iso = cur.toISOString().slice(0,10);
+      if(dates.has(iso)){ streak++; cur.setDate(cur.getDate()-1); }
+      else break;
+    }
+    return streak;
+  }
+
+  function readingStreakHTML(logs){
+    const streak = computeStreak(logs);
+    const dates = new Set(logs.map(l=>l.date));
+    const days = [];
+    for(let i=6;i>=0;i--){
+      const d = new Date(); d.setDate(d.getDate()-i);
+      const iso = d.toISOString().slice(0,10);
+      days.push(`<div class="d ${dates.has(iso)?'hit':''}" title="${iso}">${d.toLocaleDateString(undefined,{weekday:'narrow'})}</div>`);
+    }
+    return `<div class="stat"><div class="k">Current streak</div><div class="v">${streak} day${streak===1?'':'s'} 🔥</div>
+      <div class="streak-flames">${days.join('')}</div></div>`;
+  }
+
+  // ---------- Events ----------
+  function bindTabs(){
+    $$('#scTabs button').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        $$('#scTabs button').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        $$('#app-study-center main > section').forEach(s=>s.style.display='none');
+        $('#view-sc-'+btn.dataset.tab).style.display='';
+        Store.set({ ui: Object.assign({}, Store.get().ui, { tab: btn.dataset.tab }) });
+      });
+    });
+  }
+
+  function bindDashboard(){
+    $('#dashTodoQuickAdd').addEventListener('keydown', e=>{
+      if(e.key==='Enter' && e.target.value.trim()){
+        const d = Store.get();
+        d.todos.tasks.push({ id:Utils.uid(), text:e.target.value.trim(), category: d.todos.categories.includes('Other') ? 'Other' : d.todos.categories[0], done:false, createdAt:new Date().toISOString() });
+        Store.save(); e.target.value=''; Render.dashboard(); Render.todo();
+      }
+    });
+  }
+
+  function bindExams(){
+    document.addEventListener('click', e=>{
+      const addBtn = e.target.closest('[data-exam-addmilestone]');
+      if(addBtn){
+        const key = addBtn.dataset.examAddmilestone;
+        const input = document.querySelector(`[data-exam-newmilestone="${key}"]`);
+        if(input.value.trim()){
+          Store.get().exams[key].milestones.push({ id:Utils.uid(), text:input.value.trim(), done:false });
+          Store.save(); input.value=''; Render.exams(); Render.dashboard();
+        }
+      }
+      const delMile = e.target.closest('[data-milestone-del]');
+      if(delMile){
+        const key = delMile.dataset.examDel;
+        const mid = delMile.dataset.milestoneDel;
+        const e2 = Store.get().exams[key];
+        e2.milestones = e2.milestones.filter(m=>m.id!==mid);
+        Store.save(); Render.exams(); Render.dashboard();
+      }
+    });
+    document.addEventListener('change', e=>{
+      const chk = e.target.closest('[data-milestone]');
+      if(chk){
+        const key = chk.dataset.exam;
+        const m = Store.get().exams[key].milestones.find(x=>x.id===chk.dataset.milestone);
+        m.done = chk.checked; Store.save(); Render.exams(); Render.dashboard();
+      }
+      const dateInput = e.target.closest('[data-exam-date]');
+      if(dateInput){
+        Store.get().exams[dateInput.dataset.examDate].targetDate = dateInput.value;
+        Store.save(); Render.exams(); Render.dashboard();
+      }
+    });
+    document.addEventListener('blur', e=>{
+      const notes = e.target.closest && e.target.closest('[data-exam-notes]');
+      if(notes){ Store.get().exams[notes.dataset.examNotes].notes = notes.value; Store.save(); }
+    }, true);
+  }
+
+  function bindCodesys(){
+    $('#codesysAddLesson').addEventListener('click', ()=>{
+      const input = $('#codesysNewLessonName');
+      if(input.value.trim()){
+        Store.get().codesys.lessons.push({ id:Utils.uid(), name:input.value.trim(), done:false, notes:'' });
+        Store.save(); input.value=''; Render.codesys(); Render.dashboard();
+      }
+    });
+    $('#codesysLessonList').addEventListener('change', e=>{
+      const chk = e.target.closest('[data-lesson]');
+      if(chk){
+        const l = Store.get().codesys.lessons.find(x=>x.id===chk.dataset.lesson);
+        l.done = chk.checked; Store.save(); Render.codesys(); Render.dashboard();
+      }
+    });
+    $('#codesysLessonList').addEventListener('click', async e=>{
+      const del = e.target.closest('[data-lesson-del]');
+      if(del){
+        const ok = await modal('Delete lesson?', 'This cannot be undone.');
+        if(ok){
+          const d = Store.get();
+          d.codesys.lessons = d.codesys.lessons.filter(l=>l.id!==del.dataset.lessonDel);
+          Store.save(); Render.codesys(); Render.dashboard();
+        }
+      }
+      const ren = e.target.closest('[data-lesson-rename]');
+      if(ren){
+        const l = Store.get().codesys.lessons.find(x=>x.id===ren.dataset.lessonRename);
+        const name = prompt('Rename lesson:', l.name);
+        if(name && name.trim()){ l.name = name.trim(); Store.save(); Render.codesys(); }
+      }
+    });
+  }
+
+  function bindReading(){
+    $('#readingSaveBook').addEventListener('click', ()=>{
+      Store.get().reading.currentBook = $('#readingCurrentBook').value.trim();
+      Store.save(); Render.dashboard();
+    });
+    $('#readingLogToday').addEventListener('click', ()=>{
+      const d = Store.get();
+      const today = Utils.todayISO();
+      const minutes = parseInt($('#readingMinutes').value||'0',10) || 0;
+      const note = $('#readingNote').value.trim();
+      const existing = d.reading.logs.find(l=>l.date===today);
+      if(existing){ existing.minutes = minutes; existing.note = note; }
+      else { d.reading.logs.push({ id:Utils.uid(), date:today, minutes, note }); }
+      Store.save(); $('#readingMinutes').value=''; $('#readingNote').value='';
+      Render.reading(); Render.dashboard();
+    });
+    $('#readingLogTable').addEventListener('click', e=>{
+      const del = e.target.closest('[data-readinglog-del]');
+      if(del){
+        const d = Store.get();
+        d.reading.logs = d.reading.logs.filter(l=>l.id!==del.dataset.readinglogDel);
+        Store.save(); Render.reading(); Render.dashboard();
+      }
+    });
+    $('#shelfAdd').addEventListener('click', ()=>{
+      const input = $('#shelfNewTitle');
+      if(input.value.trim()){
+        Store.get().reading.shelf.push({ id:Utils.uid(), title:input.value.trim() });
+        Store.save(); input.value=''; Render.reading();
+      }
+    });
+    $('#shelfList').addEventListener('click', e=>{
+      const start = e.target.closest('[data-shelf-start]');
+      if(start){
+        const d = Store.get();
+        const book = d.reading.shelf.find(b=>b.id===start.dataset.shelfStart);
+        d.reading.currentBook = book.title;
+        d.reading.shelf = d.reading.shelf.filter(b=>b.id!==book.id);
+        Store.save(); Render.reading(); Render.dashboard();
+      }
+      const del = e.target.closest('[data-shelf-del]');
+      if(del){
+        const d = Store.get();
+        d.reading.shelf = d.reading.shelf.filter(b=>b.id!==del.dataset.shelfDel);
+        Store.save(); Render.reading();
+      }
+    });
+    $('#bibleTodayBox').addEventListener('click', e=>{
+      const d = Store.get();
+      if(e.target.closest('#bibleMarkRead')){
+        const bible = d.reading.bible;
+        const countInput = document.getElementById('bibleCount');
+        let n = countInput ? parseInt(countInput.value||'1',10) : 1;
+        if(!n || n<1) n = 1;
+        const today = Utils.todayISO();
+        for(let i=0;i<n && bible.completed < BIBLE_CHAPTERS.length;i++){
+          const chapter = BIBLE_CHAPTERS[bible.completed];
+          bible.log.push({ id:Utils.uid(), date:today, chapter });
+          bible.completed += 1;
+        }
+        Store.save(); Render.bible(); Render.dashboard();
+      } else if(e.target.closest('#bibleUndo')){
+        const bible = d.reading.bible;
+        if(bible.completed > 0){
+          bible.completed -= 1;
+          bible.log.pop();
+          Store.save(); Render.bible(); Render.dashboard();
+        }
+      }
+    });
+  }
+
+  function bindTodo(){
+    $('#todoAddBtn').addEventListener('click', ()=>{
+      const text = $('#todoNewText').value.trim();
+      const category = $('#todoNewCategory').value;
+      if(!text) return;
+      Store.get().todos.tasks.push({ id:Utils.uid(), text, category, done:false, createdAt:new Date().toISOString() });
+      Store.save(); $('#todoNewText').value=''; Render.todo(); Render.dashboard();
+    });
+    $('#todoNewText').addEventListener('keydown', e=>{ if(e.key==='Enter') $('#todoAddBtn').click(); });
+    $('#todoAddCategory').addEventListener('click', ()=>{
+      const name = $('#todoNewCategoryName').value.trim();
+      if(!name) return;
+      const d = Store.get();
+      if(!d.todos.categories.includes(name)) d.todos.categories.push(name);
+      Store.save(); $('#todoNewCategoryName').value=''; Render.todo();
+    });
+    $('#todoByCategory').addEventListener('change', e=>{
+      const chk = e.target.closest('[data-todo-toggle]');
+      if(chk){
+        const t = Store.get().todos.tasks.find(x=>x.id===chk.dataset.todoToggle);
+        t.done = chk.checked; Store.save(); Render.todo(); Render.dashboard();
+      }
+    });
+    $('#todoByCategory').addEventListener('click', e=>{
+      const del = e.target.closest('[data-todo-del]');
+      if(del){
+        const d = Store.get();
+        d.todos.tasks = d.todos.tasks.filter(t=>t.id!==del.dataset.todoDel);
+        Store.save(); Render.todo(); Render.dashboard();
+      }
+    });
+    $('#dashTodoList').addEventListener('change', e=>{
+      const chk = e.target.closest('[data-todo-toggle]');
+      if(chk){
+        const t = Store.get().todos.tasks.find(x=>x.id===chk.dataset.todoToggle);
+        t.done = chk.checked; Store.save(); Render.dashboard(); Render.todo();
+      }
+    });
+    $('#dashTodoList').addEventListener('click', e=>{
+      const del = e.target.closest('[data-todo-del]');
+      if(del){
+        const d = Store.get();
+        d.todos.tasks = d.todos.tasks.filter(t=>t.id!==del.dataset.todoDel);
+        Store.save(); Render.dashboard(); Render.todo();
+      }
+    });
+  }
+
+  function bindSettings(){
+    $('#scExportBtn').addEventListener('click', ()=>{
+      const blob = new Blob([JSON.stringify(Store.get(), null, 2)], { type:'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `study-command-center-${Utils.todayISO()}.json`;
+      a.click();
+    });
+    $('#scImportBtn').addEventListener('click', ()=> $('#scImportFile').click());
+    $('#scImportFile').addEventListener('change', async e=>{
+      const file = e.target.files[0]; if(!file) return;
+      const ok = await modal('Import data?', 'This will replace everything in this browser.');
+      if(!ok) return;
+      try{
+        const data = JSON.parse(await file.text());
+        if(!data.exams || !data.todos) throw new Error('Invalid schema');
+        Storage.save(data); location.reload();
+      }catch(err){ alert('Invalid JSON file: ' + err.message); }
+    });
+    $('#scClearBtn').addEventListener('click', async ()=>{
+      const ok = await modal('Clear all data?', 'This deletes every exam, lesson, reading log, and task. Cannot be undone.');
+      if(ok){ Storage.clear(); location.reload(); }
+    });
+  }
+
+  function init(){
+    bindTabs(); bindDashboard(); bindExams(); bindCodesys(); bindReading(); bindTodo(); bindSettings();
+    const tab = Store.get().ui.tab || 'dashboard';
+    const btn = document.querySelector(`#scTabs button[data-tab="${tab}"]`);
+    if(btn) btn.click();
+    Render.all();
+  }
+
+  init();
+})();
+</script>
+
+
+
+<script>
+(function(){
+  var KEY = 'commandCenter.appSwitcher.activeApp';
+  // Migrate legacy key so existing users keep their last selection.
+  try {
+    var _legacy = localStorage.getItem('appSwitcher.activeApp');
+    if (_legacy && !localStorage.getItem(KEY)) {
+      localStorage.setItem(KEY, _legacy);
+      localStorage.removeItem('appSwitcher.activeApp');
+    }
+  } catch(e){}
+  var gfDiv = document.getElementById('app-garage-fund');
+  var scDiv = document.getElementById('app-study-center');
+  var calcDiv = document.getElementById('app-calculator');
+  var swGarage = document.getElementById('swGarage');
+  var swStudy = document.getElementById('swStudy');
+  var swCalc = document.getElementById('swCalc');
+
+  var all = [
+    { key:'garage', div:gfDiv, btn:swGarage, cls:'gf-active' },
+    { key:'study',  div:scDiv, btn:swStudy, cls:'sc-active' },
+    { key:'calc',   div:calcDiv, btn:swCalc, cls:'calc-active' }
+  ];
+
+  function show(app){
+    all.forEach(function(a){
+      if(a.key === app){
+        a.div.style.display = '';
+        a.btn.classList.add('active', a.cls);
+      } else {
+        a.div.style.display = 'none';
+        a.btn.classList.remove('active', a.cls);
+      }
+    });
+    try { localStorage.setItem(KEY, app); } catch(e){}
+  }
+
+  swGarage.addEventListener('click', function(){ show('garage'); });
+  swStudy.addEventListener('click', function(){ show('study'); });
+  swCalc.addEventListener('click', function(){ show('calc'); });
+
+  var last = 'garage';
+  try { last = localStorage.getItem(KEY) || 'garage'; } catch(e){}
+  show(last);
+})();
+</script>
+
+<script>
+(function(){
+  'use strict';
+  var display = '0';    // current entry, always a string
+  var stored = null;     // stored operand (number)
+  var pendingOp = null;  // '+','-','*','/'
+  var justEvaluated = false;   // true right after '=' — next digit starts a fresh calculation
+  var waitingForOperand = false; // true right after an operator — next digit starts the 2nd operand
+  var history = [];
+
+  var mainLine = document.getElementById('calcMainLine');
+  var prevLine = document.getElementById('calcPrevLine');
+  var historyBox = document.getElementById('calcHistory');
+  var grid = document.getElementById('calcGrid');
+
+  var OP_SYMBOL = { '+':'+', '-':'−', '*':'×', '/':'÷' };
+
+  function fmtNum(n){
+    if (!isFinite(n)) return 'Error';
+    // avoid float noise, keep reasonable precision, trim trailing zeros
+    var s = parseFloat(n.toPrecision(12)).toString();
+    return s;
+  }
+
+  function render(){
+    mainLine.textContent = display === '' ? '0' : display;
+    prevLine.textContent = (stored !== null && pendingOp)
+      ? fmtNum(stored) + ' ' + OP_SYMBOL[pendingOp]
+      : '\u00A0';
+    if (!history.length) {
+      historyBox.innerHTML = '<div class="empty">No calculations yet.</div>';
+    } else {
+      historyBox.innerHTML = history.slice().reverse().slice(0,20).map(function(h){
+        return '<div class="calc-hist-row"><span>' + h.expr + '</span><b>' + h.result + '</b></div>';
+      }).join('');
+    }
+  }
+
+  function inputDigit(d){
+    if (justEvaluated || waitingForOperand) { display = ''; justEvaluated = false; waitingForOperand = false; }
+    if (display === '0') display = '';
+    if ((display.match(/\d/g) || []).length >= 15) return; // sane length cap
+    display = display + d;
+  }
+
+  function inputDecimal(){
+    if (justEvaluated || waitingForOperand) { display = ''; justEvaluated = false; waitingForOperand = false; }
+    display = display === '' ? '0.' : (display.includes('.') ? display : display + '.');
+  }
+
+  function inputSign(){
+    if (display === '' || display === '0') return;
+    display = display.charAt(0) === '-' ? display.slice(1) : '-' + display;
+  }
+
+  function inputPercent(){
+    var n = parseFloat(display || '0');
+    display = fmtNum(n / 100);
+  }
+
+  function clearAll(){
+    display = '0'; stored = null; pendingOp = null; justEvaluated = false; waitingForOperand = false;
+  }
+
+  function backspace(){
+    if (justEvaluated) { clearAll(); return; }
+    var s = display.slice(0, -1);
+    display = s === '' || s === '-' ? '0' : s;
+  }
+
+  function applyOp(a, op, b){
+    switch(op){
+      case '+': return a + b;
+      case '-': return a - b;
+      case '*': return a * b;
+      case '/': return b === 0 ? NaN : a / b;
+    }
+  }
+
+  function chooseOp(op){
+    if (waitingForOperand) {
+      // user changed their mind about the operator before typing the next number
+      pendingOp = op;
+      return;
+    }
+    var current = parseFloat(display === '' ? '0' : display);
+    if (stored !== null && pendingOp && !justEvaluated) {
+      var result = applyOp(stored, pendingOp, current);
+      stored = result;
+      display = fmtNum(result);
+    } else {
+      stored = current;
+    }
+    pendingOp = op;
+    justEvaluated = false;
+    waitingForOperand = true;
+  }
+
+  function equals(){
+    if (pendingOp === null || stored === null) return;
+    var current = parseFloat(display === '' ? '0' : display);
+    var result = applyOp(stored, pendingOp, current);
+    var expr = fmtNum(stored) + ' ' + OP_SYMBOL[pendingOp] + ' ' + fmtNum(current) + ' =';
+    var resultStr = fmtNum(result);
+    history.push({ expr: expr, result: resultStr });
+    display = resultStr;
+    stored = null;
+    pendingOp = null;
+    justEvaluated = true;
+    waitingForOperand = false;
+  }
+
+  grid.addEventListener('click', function(e){
+    var btn = e.target.closest('.calc-btn');
+    if (!btn) return;
+    var action = btn.dataset.calc;
+    if (action === 'digit') inputDigit(btn.dataset.digit);
+    else if (action === 'decimal') inputDecimal();
+    else if (action === 'sign') inputSign();
+    else if (action === 'percent') inputPercent();
+    else if (action === 'clear') clearAll();
+    else if (action === 'backspace') backspace();
+    else if (action === 'op') chooseOp(btn.dataset.op);
+    else if (action === 'equals') equals();
+    render();
+  });
+
+  document.getElementById('calcClearHistory').addEventListener('click', function(){
+    history = []; render();
+  });
+
+  // keyboard support, only while the Calculator app is visible
+  document.addEventListener('keydown', function(e){
+    var calcVisible = document.getElementById('app-calculator').style.display !== 'none';
+    if (!calcVisible) return;
+    if (e.key >= '0' && e.key <= '9') { inputDigit(e.key); render(); }
+    else if (e.key === '.') { inputDecimal(); render(); }
+    else if (e.key === '+' || e.key === '-' || e.key === '*' || e.key === '/') { chooseOp(e.key); render(); }
+    else if (e.key === 'Enter' || e.key === '=') { e.preventDefault(); equals(); render(); }
+    else if (e.key === 'Backspace') { backspace(); render(); }
+    else if (e.key === 'Escape') { clearAll(); render(); }
+    else if (e.key === '%') { inputPercent(); render(); }
+  });
+
+  render();
+})();
+</script>
+
+</body>
+</html>
