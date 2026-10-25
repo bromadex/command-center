@@ -398,6 +398,10 @@ tbody tr:last-child td{border-bottom:0}
 <body>
 
 <script>
+  // Local-calendar YYYY-MM-DD. Date.toISOString() converts to UTC first, which shifts dates by a day
+  // for anyone ahead of UTC (e.g. South Africa), so never use it to format a calendar date.
+  window.ccISO = function(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); };
+
   // Flip a root class the moment the Material Symbols web font finishes loading
   // so we can hide the literal ligature names ("directions_car") until then.
   (function(){
@@ -1294,7 +1298,7 @@ const Accounting = (() => {
         const next = new Date(due + 'T00:00:00');
         if (t.recurring === 'weekly') next.setDate(next.getDate() + 7);
         else if (t.recurring === 'monthly') next.setMonth(next.getMonth() + 1);
-        due = next.toISOString().slice(0, 10);
+        due = ccISO(next);
         guard++;
       }
     });
@@ -1454,7 +1458,7 @@ const Render = (() => {
     const s = Store.get();
     const days = Number(s.ui.forecastDays) || 30;
     const horizon = new Date(Utils.todayISO() + 'T00:00:00'); horizon.setDate(horizon.getDate() + days);
-    const horizonISO = horizon.toISOString().slice(0, 10);
+    const horizonISO = ccISO(horizon);
     document.querySelectorAll('#forecastHorizon .chip').forEach(c => c.classList.toggle('active', Number(c.dataset.horizon) === days));
     const bal = Accounting.getBalances(horizonISO);
     const recurringProj = Accounting.getRecurringProjection(horizonISO);
@@ -1668,8 +1672,8 @@ const Render = (() => {
         ${sorted.map(e => {
           const approvalDate = new Date(e.date+'T00:00:00'); approvalDate.setDate(approvalDate.getDate()+45);
           const availableDate = new Date(approvalDate); availableDate.setDate(availableDate.getDate()+4);
-          const approvalISO = approvalDate.toISOString().slice(0,10);
-          const availableISO = availableDate.toISOString().slice(0,10);
+          const approvalISO = ccISO(approvalDate);
+          const availableISO = ccISO(availableDate);
           totalLogged += e.amountRandCents;
           let statusTag;
           if (e.paidTxId) {
@@ -1836,7 +1840,7 @@ const Events = (() => {
           } else if (data.recurring === 'monthly') {
             next.setMonth(next.getMonth() + 1);
           }
-          data.nextDueDate = next.toISOString().slice(0, 10);
+          data.nextDueDate = ccISO(next);
         }
         Store.add('transactions', { id: Utils.uid(), ...data });
         clearForm('txForm');
@@ -1943,14 +1947,14 @@ const Events = (() => {
       const [y, m] = Store.get().ui.budgetMonth.split('-');
       const d = new Date(+y, +m - 1, 1);
       d.setMonth(d.getMonth() - 1);
-      Store.set({ ui: { ...Store.get().ui, budgetMonth: Utils.monthKey(d.toISOString().slice(0, 10)) } });
+      Store.set({ ui: { ...Store.get().ui, budgetMonth: Utils.monthKey(ccISO(d)) } });
       Render.budgets();
     });
     $('#nextMonth').addEventListener('click', () => {
       const [y, m] = Store.get().ui.budgetMonth.split('-');
       const d = new Date(+y, +m - 1, 1);
       d.setMonth(d.getMonth() + 1);
-      Store.set({ ui: { ...Store.get().ui, budgetMonth: Utils.monthKey(d.toISOString().slice(0, 10)) } });
+      Store.set({ ui: { ...Store.get().ui, budgetMonth: Utils.monthKey(ccISO(d)) } });
       Render.budgets();
     });
   }
@@ -2173,7 +2177,7 @@ const Events = (() => {
           const next = new Date(due + 'T00:00:00');
           if (t.recurring === 'weekly') next.setDate(next.getDate() + 7);
           else if (t.recurring === 'monthly') next.setMonth(next.getMonth() + 1);
-          due = next.toISOString().slice(0, 10);
+          due = ccISO(next);
           guard++;
         }
         return due === t.nextDueDate ? t : { ...t, nextDueDate: due };
@@ -2225,7 +2229,7 @@ const Events = (() => {
           <div>Total Cycle: <b>${totalDays} days</b></div>
           <div>Profit/Day: <b>${Utils.fmt(perDay)}</b></div>
           <div style="grid-column:1/-1; margin-top:8px; color:var(--ink-faint)">
-            Timeline: Order (Today) → Arrival (${arrival.toISOString().slice(0,10)}) → Sold (${sold.toISOString().slice(0,10)})
+            Timeline: Order (Today) → Arrival (${ccISO(arrival)}) → Sold (${ccISO(sold)})
           </div>
         </div>`;
     });
@@ -2449,7 +2453,7 @@ Render.all();
   // ---------- Utils ----------
   const Utils = {
     uid(){ return Math.random().toString(36).slice(2,10) + Date.now().toString(36).slice(-4); },
-    todayISO(){ return new Date().toISOString().slice(0,10); },
+    todayISO(){ return ccISO(new Date()); },
     daysBetween(fromISO, toISO){
       const a = new Date(fromISO+'T00:00:00'); const b = new Date(toISO+'T00:00:00');
       return Math.round((b-a)/86400000);
@@ -2708,7 +2712,7 @@ Render.all();
       $('#dashBible').innerHTML = `
         <div class="progress"><i style="width:${bPct}%"></i></div>
         <p style="color:var(--md-on-surface-variant); margin:10px 0 0">${bCompleted} of ${bTotal} chapters (${bPct}%).</p>
-        ${bRemaining>0 ? `<p style="color:var(--md-on-surface-variant); margin:4px 0 0">${bAvgPerDay.toFixed(1)} ch/day pace → ${bDaysLeft}d left, around ${Utils.fmtDate(bFinishDate.toISOString().slice(0,10))}.</p>` : `<p style="color:var(--md-success); margin:4px 0 0">Finished! 🎉</p>`}`;
+        ${bRemaining>0 ? `<p style="color:var(--md-on-surface-variant); margin:4px 0 0">${bAvgPerDay.toFixed(1)} ch/day pace → ${bDaysLeft}d left, around ${Utils.fmtDate(ccISO(bFinishDate))}.</p>` : `<p style="color:var(--md-success); margin:4px 0 0">Finished! 🎉</p>`}`;
 
       // Reading mini
       $('#dashReading').innerHTML = readingStreakHTML(d.reading.logs);
@@ -2828,8 +2832,8 @@ Render.all();
           <div class="v">${avgPerDay.toFixed(1)} ch/day</div>
           <div class="s">based on ${distinctDays} day${distinctDays===1?'':'s'} of reading logged</div>
         </div>
-        <p style="color:var(--md-on-surface-variant); margin:10px 0 0">At that pace, ${daysLeftAtPace} day${daysLeftAtPace===1?'':'s'} left — around <b>${Utils.fmtDate(finishDateAtPace.toISOString().slice(0,10))}</b>.</p>
-        <p style="color:var(--ink-faint); margin:4px 0 0; font-size:12px">(At exactly one chapter a day it would be ${Utils.fmtDate(finishDate1x.toISOString().slice(0,10))}.)</p>` : ''}`;
+        <p style="color:var(--md-on-surface-variant); margin:10px 0 0">At that pace, ${daysLeftAtPace} day${daysLeftAtPace===1?'':'s'} left — around <b>${Utils.fmtDate(ccISO(finishDateAtPace))}</b>.</p>
+        <p style="color:var(--ink-faint); margin:4px 0 0; font-size:12px">(At exactly one chapter a day it would be ${Utils.fmtDate(ccISO(finishDate1x))}.)</p>` : ''}`;
 
       const recentLog = bible.log.slice().sort((a,b)=> a.date<b.date?1:-1).slice(0,10);
       const logTable = document.getElementById('bibleLogTable');
@@ -2872,7 +2876,7 @@ Render.all();
     let streak = 0;
     let cur = new Date();
     while(true){
-      const iso = cur.toISOString().slice(0,10);
+      const iso = ccISO(cur);
       if(dates.has(iso)){ streak++; cur.setDate(cur.getDate()-1); }
       else break;
     }
@@ -2885,7 +2889,7 @@ Render.all();
     const days = [];
     for(let i=6;i>=0;i--){
       const d = new Date(); d.setDate(d.getDate()-i);
-      const iso = d.toISOString().slice(0,10);
+      const iso = ccISO(d);
       days.push(`<div class="d ${dates.has(iso)?'hit':''}" title="${iso}">${d.toLocaleDateString(undefined,{weekday:'narrow'})}</div>`);
     }
     return `<div class="stat"><div class="k">Current streak</div><div class="v">${streak} day${streak===1?'':'s'} 🔥</div>
@@ -3148,7 +3152,8 @@ Render.all();
    Data lives inside the finance state under "planner" (targets, ideas, plan, books),
    so Settings → Export / Import already covers it. New fields are optional and get
    defaults when read — no destructive migration, existing records are untouched.
-   Allocations are planning earmarks: they never create ledger rows or move money.
+   Allocate = planning earmark (no ledger change). Spend = a real ledger expense (or a link to one that
+   already exists) that reduces the balance and the target's allocation; it still counts as progress.
    ============================================================ */
 (function(){
 'use strict';
@@ -3230,13 +3235,17 @@ const saved=t=>r2(t.tx.reduce((a,x)=>a+x.amt,0));
 const fundBal=()=>Accounting.getBalances().balanceCents/100;
 const allocated=()=>r2(S.targets.reduce((a,t)=>a+saved(t),0));
 const poolBal=()=>r2(fundBal()-allocated());
+const spentOf=t=>r2(t.tx.reduce((a,x)=>a+(x.kind==='spend'?(x.spent||0):0),0));
+const linkedIds=()=>new Set(S.targets.flatMap(t=>t.tx.filter(x=>x.ledgerId).map(x=>x.ledgerId)));
+const ledgerExp=()=>Store.get().transactions.filter(x=>x.type==='expense');
+const refreshAll=()=>{try{Render.all()}catch(e){}};
 function tinfo(t){
-  const sv=saved(t),has=t.goal>0,pct=has?Math.min(100,sv/t.goal*100):0,rem=has?Math.max(0,r2(t.goal-sv)):0;
+  const sv=saved(t),sp=spentOf(t),fd=r2(sv+sp),has=t.goal>0,pct=has?Math.min(100,fd/t.goal*100):0,rem=has?Math.max(0,r2(t.goal-fd)):0;
   let left=null,need=null;
   if(t.deadline){left=daysBetween(today(),t.deadline);const mo=Math.max(1,Math.ceil(Math.max(left,0)/30.4));need=rem/mo}
   const reached=has&&rem<=0;
   const late=!reached&&left!==null&&left<0&&t.status==='active';
-  return{sv,has,pct,rem,left,need,reached,late};
+  return{sv,sp,fd,has,pct,rem,left,need,reached,late};
 }
 const sortTargets=a=>[...a].sort((x,y)=>(PRI_ORD[x.priority]-PRI_ORD[y.priority])||((x.deadline||'9999').localeCompare(y.deadline||'9999'))||x.name.localeCompare(y.name));
 
@@ -3261,13 +3270,13 @@ function targetCard(t){
   const prog=i.has?ring(i.pct,84,9,t.color,`<b class="num" style="font-size:17px">${Math.round(i.pct)}%</b>`):ring(0,84,9,t.color,`<span class="ico-in" style="color:${t.color}">${svg(t.icon)}</span>`);
   return `<article class="glass tcard" tabindex="0" role="button" data-act="tdetail" data-id="${t.id}" aria-label="${esc(t.name)} details">
     <div class="head">${prog}
-      <div style="min-width:0;flex:1"><h3>${esc(t.name)}</h3><div class="num muted" style="margin-top:3px">${i.has?`${money(i.sv)} of ${money(t.goal)}`:`${money(i.sv)} allocated`}</div><div class="row" style="margin-top:7px;gap:6px">${chip}${t.priority==='high'?'<span class="chip warnc">High priority</span>':''}${t.category?`<span class="chip">${esc(t.category)}</span>`:''}</div></div></div>
+      <div style="min-width:0;flex:1"><h3>${esc(t.name)}</h3><div class="num muted" style="margin-top:3px">${i.has?`${money(i.fd)} of ${money(t.goal)}`:`${money(i.sv)} allocated`}${i.sp>0?` · ${money(i.sp)} spent`:''}</div><div class="row" style="margin-top:7px;gap:6px">${chip}${t.priority==='high'?'<span class="chip warnc">High priority</span>':''}${t.category?`<span class="chip">${esc(t.category)}</span>`:''}</div></div></div>
     ${i.has&&!i.reached&&t.status==='active'?`<div class="muted" style="font-size:13.5px"><b class="num" style="color:var(--cc-ink)">${money(i.rem)}</b> remaining${i.need!==null&&i.left>=0?` · about <b class="num" style="color:var(--cc-ink)">${money(Math.ceil(i.need))}</b>/month to make it`:''}</div>`:''}
-    ${t.status==='active'?`<div class="row" style="margin-top:auto"><button class="btn pri sm" data-act="alloc" data-id="${t.id}">Allocate</button><button class="btn sm ghost" data-act="tedit" data-id="${t.id}">Edit</button></div>`:''}</article>`;
+    ${t.status==='active'?`<div class="row" style="margin-top:auto"><button class="btn pri sm" data-act="alloc" data-id="${t.id}">Allocate</button><button class="btn sm" data-act="spend" data-id="${t.id}">Spend</button><button class="btn sm ghost" data-act="tedit" data-id="${t.id}">Edit</button></div>`:''}</article>`;
 }
 function vTargets(){
   const tg=S.targets,act=tg.filter(t=>t.status==='active');
-  const withGoal=act.filter(t=>t.goal>0),tot=withGoal.reduce((a,t)=>a+t.goal,0),sv=withGoal.reduce((a,t)=>a+Math.min(saved(t),t.goal),0),pct=tot>0?sv/tot*100:0;
+  const withGoal=act.filter(t=>t.goal>0),tot=withGoal.reduce((a,t)=>a+t.goal,0),sv=withGoal.reduce((a,t)=>a+Math.min(tinfo(t).fd,t.goal),0),pct=tot>0?sv/tot*100:0;
   const fund=fundBal(),al=allocated(),pool=poolBal();
   const split=tg.filter(t=>saved(t)>0).map(t=>`<i style="flex:${saved(t)};background:${t.color}" title="${esc(t.name)}"></i>`).join('');
   const legend=tg.filter(t=>saved(t)>0).map(t=>`<span><b class="dot" style="background:${t.color}"></b>${esc(t.name)} <span class="muted num">${money(saved(t))}</span></span>`).join('');
@@ -3285,7 +3294,7 @@ function vTargets(){
        <div><span class="muted">Allocated to targets</span><b class="num">− ${money(al)}</b></div>
        <div class="tot"><span class="muted">Unallocated</span><b class="num">${money(pool)}</b></div>
      </div>
-     ${over?`<div class="note warnbox">You have earmarked ${money(-pool)} more than your balance. Spending or a transfer out reduced it. Take money back from a target to fix this.</div>`:`<div class="muted" style="font-size:12.5px">Allocating is a planning earmark only. It never changes your ledger or your real balance.</div>`}
+     ${over?`<div class="note warnbox">You have earmarked ${money(-pool)} more than your balance. Spending or a transfer out reduced it. Take money back from a target to fix this.</div>`:`<div class="muted" style="font-size:12.5px">Allocate is a planning earmark and never touches your ledger. Spend records a real expense.</div>`}
    </section></div>`;
   const dist=sv>0||split?`<section class="glass panel"><h2>How your allocations are split</h2><div class="split">${split}</div><div class="legend">${legend}</div></section>`:'';
   const fl=ui.tFilter,list=sortTargets(tg.filter(t=>fl==='all'||t.status===fl));
@@ -3398,6 +3407,40 @@ function sAlloc(id,back){
     if(!back&&a>pool+1e-9)return err('Only '+money(Math.max(0,pool))+' is unallocated. Log income in Money first or take money back from another target.');
     t.tx.push({id:uid(),date:today(),amt:back?-r2(a):r2(a),note:(fd.get('note')||'').trim()});save();close();toast(back?'Moved back to unallocated':'Allocated')},false,'Allocate');
 }
+function sSpend(id){
+  const t=S.targets.find(x=>x.id===id);if(!t)return;const i=tinfo(t);const pool=poolBal();
+  const lk=linkedIds(),opts=ledgerExp().filter(x=>!lk.has(x.id)).sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,80);
+  sheet(`<h2>Spend from ${esc(t.name)}</h2>
+   <div class="muted num">${money(i.sv)} allocated here · ${money(Math.max(0,pool))} unallocated${i.has?` · ${money(i.rem)} left to reach the target`:''}</div>
+   <div class="seg" role="group" aria-label="Spend mode"><button type="button" data-act="spmode" data-v="new" aria-pressed="true">New expense</button><button type="button" data-act="spmode" data-v="link" aria-pressed="false">Link existing expense</button></div>
+   <input type="hidden" name="mode" id="spMode" value="new">
+   <div id="spNew"><label>Amount<input id="spAmt" name="amt" type="number" step="0.01" min="0" inputmode="decimal"></label>
+    <div class="row" style="margin:8px 0"><button type="button" class="btn sm" data-act="spfill" data-v="${Math.max(0,i.sv)}">All allocated ${money(i.sv)}</button></div>
+    <label>Note<input id="spNote" name="note" placeholder="What was it for?"></label>
+    <div class="muted" style="font-size:12.5px;margin-top:6px">Adds an expense to your Ledger under “Target: ${esc(t.name)}”, lowers your balance, and uses this target's allocation first. Anything beyond it comes from unallocated money.</div></div>
+   <div id="spLink" style="display:none"><label>Ledger expense<select id="spSel" name="ledger"><option value="">Choose an expense…</option>${opts.map(x=>`<option value="${x.id}">${short(x.date)} · ${esc(x.category||'Expense')}${x.note?' · '+esc(String(x.note).slice(0,30)):''} · ${money(x.amountCents/100)}</option>`).join('')}</select></label>
+    <div class="muted" style="font-size:12.5px;margin-top:6px">For money you already logged as an expense. Nothing new is added to the Ledger; this just counts it toward the target and frees any matching allocation.</div></div>
+   <div class="err" id="sheetErr" role="alert"></div>
+   <div class="acts">${cancelBtn}<button class="btn pri" type="submit">Record spend</button></div>`,fd=>{
+    const mode=fd.get('mode');let A,note,ledgerId,created=false;
+    if(mode==='link'){
+      const e=ledgerExp().find(x=>x.id===fd.get('ledger'));if(!e)return err('Choose an expense to link.');
+      if(linkedIds().has(e.id))return err('That expense is already linked to a target.');
+      A=r2(e.amountCents/100);ledgerId=e.id;note=(e.category||'Expense')+(e.note?' · '+e.note:'');
+    }else{
+      A=r2(num(fd.get('amt')));if(!(A>0))return err('Enter an amount above zero.');
+      note=(fd.get('note')||'').trim();
+    }
+    const fromT=r2(Math.min(A,Math.max(0,i.sv))),extra=r2(A-fromT);
+    if(mode!=='link'&&extra>pool+1e-9)return err('That is '+money(extra)+' more than this target holds. Only '+money(Math.max(0,pool))+' is unallocated.');
+    if(mode!=='link'){
+      ledgerId=uid();created=true;
+      Store.add('transactions',{id:ledgerId,type:'expense',date:today(),category:'Target: '+t.name,amountCents:Math.round(A*100),note:note,recurring:'',nextDueDate:null,targetId:t.id});
+    }
+    t.tx.push({id:uid(),date:today(),amt:-fromT,kind:'spend',spent:A,ledgerId,created,note});
+    save();refreshAll();close();toast(mode==='link'?'Expense linked':'Spend recorded');
+  },false,'Spend');
+}
 function sTarget(id,seed){
   const t=S.targets.find(x=>x.id===id)||{name:seed?.name||'',goal:'',deadline:'',color:COLORS[S.targets.length%COLORS.length],note:'',desc:seed?.desc||'',category:'',priority:'medium',icon:'target',status:'active'};
   let color=t.color,icon=t.icon;
@@ -3437,12 +3480,12 @@ function sDetail(id){
   const dl=t.deadline?`${long(t.deadline)} · ${i.left<0?-i.left+' days overdue':i.left===0?'today':i.left+' days left'}`:'No deadline';
   sheet(`<div class="row between nowrap"><div style="min-width:0"><div class="row" style="gap:8px;margin-bottom:6px"><span class="chip">${TSTAT[t.status]}</span>${t.category?`<span class="chip">${esc(t.category)}</span>`:''}<span class="chip ${t.priority==='high'?'warnc':''}">${PRI_L[t.priority]} priority</span></div><h2 style="margin:0;overflow-wrap:anywhere">${esc(t.name)}</h2></div><button type="button" class="btn sm" data-act="tedit" data-id="${t.id}">Edit</button></div>
    ${t.desc?`<p class="detail-p">${esc(t.desc)}</p>`:''}
-   <div class="row" style="gap:20px;align-items:center">${i.has?ring(i.pct,100,11,t.color,`<b class="num">${Math.round(i.pct)}%</b>`):ring(0,100,11,t.color,`<span class="ico-in" style="color:${t.color}">${svg(t.icon)}</span>`)}<div><div class="lbl">Allocated</div><div class="big" style="font-size:30px">${money(i.sv)}</div><div class="muted num">${i.has?`of ${money(t.goal)} · ${money(i.rem)} remaining`:'No target amount set'}</div></div></div>
+   <div class="row" style="gap:20px;align-items:center">${i.has?ring(i.pct,100,11,t.color,`<b class="num">${Math.round(i.pct)}%</b>`):ring(0,100,11,t.color,`<span class="ico-in" style="color:${t.color}">${svg(t.icon)}</span>`)}<div><div class="lbl">Funded</div><div class="big" style="font-size:30px">${money(i.fd)}</div><div class="muted num">${i.has?`of ${money(t.goal)} · ${money(i.rem)} remaining`:'No target amount set'}</div><div class="muted num" style="margin-top:3px">${money(i.sv)} allocated · ${money(i.sp)} spent</div></div></div>
    <div class="facts"><div><span class="lbl">Deadline</span><b>${esc(dl)}</b></div>${i.has&&!i.reached&&i.need!==null&&i.left>=0?`<div><span class="lbl">Monthly need</span><b class="num">${money(Math.ceil(i.need))}</b></div>`:''}${t.completedOn?`<div><span class="lbl">Completed</span><b>${long(t.completedOn)}</b></div>`:''}</div>
    ${t.note?`<div><div class="lbl">Notes</div><p class="detail-p">${esc(t.note)}</p></div>`:''}
    ${linked.length?`<div><div class="lbl">Related ideas</div><div class="row" style="gap:6px;margin-top:6px">${linked.map(x=>`<span class="chip tagc">${esc(x.title)}</span>`).join('')}</div></div>`:''}
-   <div class="lbl">Allocation history</div><div class="log">${[...t.tx].reverse().map(x=>`<div class="li"><span>${short(x.date)} <span class="muted">${esc(x.note)}</span></span><span class="row nowrap" style="gap:6px;flex:none"><b class="num" style="color:${x.amt<0?'var(--cc-bad)':'var(--cc-good)'}">${x.amt<0?'−':'+'}${money(Math.abs(x.amt))}</b><button type="button" class="btn sm ghost" data-act="txdel" data-id="${t.id}" data-tx="${x.id}" aria-label="Remove this movement">✕</button></span></div>`).join('')||'<div class="muted" style="padding:8px 0">Nothing allocated yet.</div>'}</div>
-   <div class="acts" style="justify-content:flex-start">${t.status==='active'?`<button type="button" class="btn pri" data-act="alloc" data-id="${t.id}">Allocate</button><button type="button" class="btn" data-act="alloc-back" data-id="${t.id}">Take back</button><button type="button" class="btn" data-act="tcomplete" data-id="${t.id}">${svg('check')}Mark completed</button><button type="button" class="btn" data-act="tarchive" data-id="${t.id}">Archive</button>`:`<button type="button" class="btn pri" data-act="treopen" data-id="${t.id}">Reopen</button>${t.status==='completed'?`<button type="button" class="btn" data-act="tarchive" data-id="${t.id}">Archive</button>`:''}`}<button type="button" class="btn danger" data-act="tdelask" data-id="${t.id}" style="margin-left:auto">Delete</button></div>`,null,true,t.name);
+   <div class="lbl">History</div><div class="log">${[...t.tx].reverse().map(x=>x.kind==='spend'?`<div class="li"><span>${short(x.date)} <b>Spent</b> <span class="muted">${esc(x.note)}${x.created?' · added to Ledger':' · linked to existing expense'}</span></span><span class="row nowrap" style="gap:6px;flex:none"><b class="num" style="color:var(--cc-bad)">−${money(x.spent)}</b><button type="button" class="btn sm ghost" data-act="txdel" data-id="${t.id}" data-tx="${x.id}" aria-label="Undo this spend">✕</button></span></div>`:`<div class="li"><span>${short(x.date)} <span class="muted">${esc(x.note)}</span></span><span class="row nowrap" style="gap:6px;flex:none"><b class="num" style="color:${x.amt<0?'var(--cc-bad)':'var(--cc-good)'}">${x.amt<0?'−':'+'}${money(Math.abs(x.amt))}</b><button type="button" class="btn sm ghost" data-act="txdel" data-id="${t.id}" data-tx="${x.id}" aria-label="Remove this movement">✕</button></span></div>`).join('')||'<div class="muted" style="padding:8px 0">Nothing allocated yet.</div>'}</div>
+   <div class="acts" style="justify-content:flex-start">${t.status==='active'?`<button type="button" class="btn pri" data-act="alloc" data-id="${t.id}">Allocate</button><button type="button" class="btn" data-act="spend" data-id="${t.id}">Spend</button><button type="button" class="btn" data-act="alloc-back" data-id="${t.id}">Take back</button><button type="button" class="btn" data-act="tcomplete" data-id="${t.id}">${svg('check')}Mark completed</button><button type="button" class="btn" data-act="tarchive" data-id="${t.id}">Archive</button>`:`<button type="button" class="btn pri" data-act="treopen" data-id="${t.id}">Reopen</button>${t.status==='completed'?`<button type="button" class="btn" data-act="tarchive" data-id="${t.id}">Archive</button>`:''}`}<button type="button" class="btn danger" data-act="tdelask" data-id="${t.id}" style="margin-left:auto">Delete</button></div>`,null,true,t.name);
 }
 function sIdea(id){
   const x=S.ideas.find(y=>y.id===id);if(!x)return;
@@ -3523,7 +3566,9 @@ root.addEventListener('click',e=>{
   if(el.tagName==='INPUT'&&el.type==='checkbox'&&a==='pdone')return; // handled on change
   if(el.tagName==='SELECT')return;
   switch(a){
-   case'alloc':sAlloc(id,false);break;case'alloc-back':sAlloc(id,true);break;
+   case'alloc':sAlloc(id,false);break;case'spend':sSpend(id);break;
+   case'spmode':{const m=el.dataset.v;$('#spMode').value=m;$('#spNew').style.display=m==='new'?'':'none';$('#spLink').style.display=m==='link'?'':'none';root.querySelectorAll('[data-act=spmode]').forEach(b=>b.setAttribute('aria-pressed',b===el));break}
+   case'spfill':{const i=$('#spAmt');i.value=(Math.round(+el.dataset.v*100)/100)||'';i.focus();break}case'alloc-back':sAlloc(id,true);break;
    case'fill':{const i=$('#aAmt');i.value=(Math.round(+el.dataset.v*100)/100)||'';i.focus();break}
    case'tnew':sTarget();break;case'tedit':sTarget(id);break;case'tdetail':sDetail(id);break;
    case'tfilter':ui.tFilter=el.dataset.v;render();break;
@@ -3534,7 +3579,7 @@ root.addEventListener('click',e=>{
    case'tdelask':{const t=S.targets.find(x=>x.id===id);if(!t)break;const n=S.ideas.filter(i=>i.target===id).length;
      confirmSheet({title:'Delete “'+t.name+'”?',danger:true,label:'Delete target',body:`This removes the target and its allocation history. ${saved(t)>0?`The <b class="num">${money(saved(t))}</b> allocated to it becomes unallocated again. `:''}Your ledger, debts, budgets and flips are not touched.${n?` ${n} linked idea${n>1?'s are':' is'} kept and unlinked.`:''}`,
        onOk:()=>{S.targets=S.targets.filter(x=>x.id!==id);S.ideas.forEach(i=>{if(i.target===id)i.target=''});save();close();toast('Target deleted')}});break}
-   case'txdel':{const t=S.targets.find(x=>x.id===id);t.tx=t.tx.filter(x=>x.id!==el.dataset.tx);save();sDetail(id);break}
+   case'txdel':{const t=S.targets.find(x=>x.id===id);const x=t.tx.find(y=>y.id===el.dataset.tx);if(x&&x.kind==='spend'&&x.created&&x.ledgerId)Store.remove('transactions',x.ledgerId);t.tx=t.tx.filter(y=>y.id!==el.dataset.tx);save();refreshAll();sDetail(id);break}
    case'swatch':root.querySelectorAll('.swatches [data-c]').forEach(b=>b.setAttribute('aria-pressed',b===el));break;
    case'iconpick':root.querySelectorAll('.swatches [data-k]').forEach(b=>b.setAttribute('aria-pressed',b===el));break;
    case'ifilter':ui.ideaFilter=el.dataset.v;render();break;
