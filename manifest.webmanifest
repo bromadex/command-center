@@ -1,13 +1,13 @@
 {
-  "name": "Command Center",
+  "name": "Personal Command Center",
   "short_name": "Command Center",
-  "description": "Garage Fund savings tracker, Study Command Center, and a Calculator — data stays in your browser.",
+  "description": "Money, debts, flips, targets, ideas, study and books in one purple glass dashboard. Data stays in your browser.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
-  "theme_color": "#7d3900",
-  "background_color": "#141218",
+  "theme_color": "#100C18",
+  "background_color": "#100C18",
   "categories": ["finance", "productivity", "utilities"],
   "icons": [
     { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },

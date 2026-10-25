@@ -1,9 +1,9 @@
-// Service worker for Command Center — makes the app installable and usable offline.
+// Service worker for Personal Command Center — makes the app installable and usable offline.
 // Strategy: network-first for the HTML shell so redeploys are seen immediately, with
 // a cache fallback for offline. Cache-first for the manifest and icons since they
 // rarely change and the SW version bump handles updates.
 
-const CACHE = 'command-center-v2';
+const CACHE = 'command-center-v3-glass';
 const SHELL = [
   '/',
   '/index.html',

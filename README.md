@@ -1,55 +1,55 @@
-# Command Center
+# Personal Command Center
 
-A single-file personal command center bundling three tools behind one dark Material-Design shell:
+A single-file personal command center in a purple liquid-glass (iOS 26 inspired) interface. Manage money, debts, flips and financial targets, capture ideas, plan study and keep book notes.
 
-- **Garage Fund** — savings goal tracker with a ledger, debts (owed / I owe), monthly budgets, a reselling "flips" pipeline, Shein-affiliate commissions in ZAR, and a linear-regression forecast.
-- **Study Command Center** — lessons, todos, streaks.
-- **Calculator** — basic arithmetic with history and keyboard support.
-- **Targets & Plans** — several money targets you fund from your ledger balance, an ideas board, a weekly study plan, and books with important notes.
+| Section | What it holds |
+| --- | --- |
+| **Overview** | Balance, income/expenses, debts, target progress, charts, recent activity, priorities, quick actions |
+| **Money** | Transactions (income, expense, transfers, recurring), budgets, forecast, Shein affiliate earnings |
+| **Debts** | Owed to you / you owe, partial settlement, overdue tracking |
+| **Flips** | Inventory, purchases, sales, realized vs projected profit |
+| **Targets** | Flexible goals; allocate money as a planning earmark |
+| **Ideas** | Idea board with status, priority, category, tags; turn an idea into a target |
+| **Study** | Weekly plan plus the Study Center (PMP, PTE, CODESYS, Bible, Reading log, To-Do) |
+| **Books** | Books with status/progress and important notes (title, insight, details, chapter/page, tags) |
+| **Calculator** | Arithmetic with history and keyboard support |
+| **Settings** | Starting balance, full export/import, study-only backup, danger zone |
 
 ## Where data lives
 
-The code is a plain static HTML file — the deploy just serves it. All your data is kept in the visiting browser's `localStorage`, which means:
+Plain static HTML. All data stays in the browser's `localStorage`; it does **not** sync between browsers or devices.
 
-- Every browser and every device starts empty. Chrome on your laptop ≠ Safari on your phone.
-- Private/incognito windows start empty and forget on close.
-- Clearing site data wipes it.
+- `garageFund.v5.1` — finance, targets, ideas, study plan, books (key name frozen so existing data and old backups keep working)
+- `studyCommandCenterV1` — Study Center
 
-To move between devices or recover from a wipe, use **Settings → Export JSON** on the source and **Settings → Import JSON** on the destination. The dashboard shows a nag banner if it's been more than 30 days since the last Export.
+Use **Settings → Export JSON / Import JSON** to move data or recover from a wipe. The export is one file containing both stores. The Overview nags if there has been no export for 30 days.
 
-## Run locally
+## Money model (unchanged)
 
-Open [`index.html`](./index.html) in a browser. No build step, no dependencies beyond Google Fonts (loaded from CDN).
-
-## Deploy
-
-This repo is Vercel-ready. Push to GitHub, then in the Vercel dashboard click **Add New → Project**, pick the repo, leave every setting at default (Framework Preset = Other) and deploy. [`vercel.json`](./vercel.json) sets clean URLs, no-cache for `index.html` (so redeploys are seen instantly), and sensible security headers.
-
-## Install as an app (PWA)
-
-Once deployed over HTTPS, the site is a Progressive Web App:
-
-- **Desktop (Chrome, Edge, Brave, Arc)** — an install icon appears in the URL bar. Click it to install.
-- **Android (Chrome, Samsung Internet)** — you'll see an "Install app" prompt or an "Add to home screen" option in the menu.
-- **iOS Safari** — tap the Share button, then "Add to Home Screen".
-
-Once installed, the app opens standalone (no browser chrome), works offline (cached by a service worker), and shows up in your device's app switcher like any other app. Your data still lives in the same per-browser `localStorage` — installing doesn't move or sync it.
+- Available balance = starting balance + income + transfers in − expenses − transfers out.
+- Debts, flip stock and target allocations are **never** counted as cash.
+- Allocating money to a target is a planning earmark only. It creates no ledger row and cannot exceed the unallocated balance. Unallocated = balance − allocations.
 
 ## Data safety
 
-- Every Import first snapshots the current state to `garageFund.preImport.<timestamp>` (keeps the last 3), so a wrong-file mistake is recoverable via DevTools.
-- The dashboard shows a nag banner after 30 days without an Export.
-- A welcome banner points first-time visitors on a fresh browser to Import if they have a JSON from elsewhere.
-- `*.json` is gitignored so raw ledger exports never end up in the repo.
+- Schema **5.6** adds an explicit migration. The retired car goal stays in `goal` untouched and is copied to `retiredGoals`. Nothing is deleted.
+- Before any migration, import or clear, a raw snapshot is stored (`garageFund.preMigrate.*`, `.preImport.*`, `.preClear.*`, plus `studyCenter.*` equivalents; newest few kept).
+- Imports are validated and refused with a specific message when the file is malformed.
+- `*.json` is git-ignored so exports never reach the repo.
 
-## Schema
+## Run / deploy
 
-`localStorage['garageFund.v5.1']` holds the Garage Fund state. The key name is frozen at `v5.1` even though the current schema is `5.5` — the `Storage.migrate()` ladder upgrades transparently, and freezing the key means older builds can still read the same slot. Study Command Center uses its own separate key (`studyCommandCenterV1`).
+Open `index.html`, or push to GitHub and import into Vercel (Framework Preset: Other). `vercel.json` sets no-cache for `index.html` and `sw.js`. The service worker is network-first for HTML and bumps its cache name (`command-center-v3-glass`) so old caches are removed. Google Fonts load from a CDN; icons stay hidden if the icon font cannot load.
 
-## Targets & Plans
+## Install as an app
 
-Lives in its own tab of the top switcher and is drawn inside a shadow root, so its styles cannot collide with the other apps.
+Desktop Chrome/Edge: install icon in the address bar. Android: "Install app". iOS Safari: Share → Add to Home Screen.
 
-- **Money:** "Ready to distribute" is the Garage Fund ledger balance minus what is already allocated to targets. Allocating is a planning earmark, it does not add ledger rows. Log income in the Ledger and the pool grows.
-- **Storage:** everything is saved in the Garage Fund state under the `planner` key (`targets`, `ideas`, `plan`, `books`), so **Settings → Export / Import JSON** already backs it up. No schema migration was needed.
-- **Theme:** the iOS-26-style glass look is one `<style id="glass-theme">` block at the end of `<head>`. It only restyles shared class names and colour variables. Remove the block to get the original Material look back.
+## Code map (all in `index.html`)
+
+1. `<style id="cc-design">` — design tokens (`--cc-*`), shell, shared components. The Targets/Ideas/Books module renders in a shadow root and inherits these tokens.
+2. Money engine script — `Utils`, `Storage` (migrations), `Store`, `Accounting`, `Render`, `Events`.
+3. Study Center script.
+4. Planner script (Targets, Ideas, Study plan, Books) — exposes `window.Planner`.
+5. Calculator script.
+6. Shell script — navigation, hash routing (`#/money/budgets`), global search (Ctrl/Cmd+K), quick add, Overview and its SVG charts.
