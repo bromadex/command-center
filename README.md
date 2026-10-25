@@ -5,6 +5,7 @@ A single-file personal command center bundling three tools behind one dark Mater
 - **Garage Fund** — savings goal tracker with a ledger, debts (owed / I owe), monthly budgets, a reselling "flips" pipeline, Shein-affiliate commissions in ZAR, and a linear-regression forecast.
 - **Study Command Center** — lessons, todos, streaks.
 - **Calculator** — basic arithmetic with history and keyboard support.
+- **Targets & Plans** — several money targets you fund from your ledger balance, an ideas board, a weekly study plan, and books with important notes.
 
 ## Where data lives
 
@@ -44,3 +45,11 @@ Once installed, the app opens standalone (no browser chrome), works offline (cac
 ## Schema
 
 `localStorage['garageFund.v5.1']` holds the Garage Fund state. The key name is frozen at `v5.1` even though the current schema is `5.5` — the `Storage.migrate()` ladder upgrades transparently, and freezing the key means older builds can still read the same slot. Study Command Center uses its own separate key (`studyCommandCenterV1`).
+
+## Targets & Plans
+
+Lives in its own tab of the top switcher and is drawn inside a shadow root, so its styles cannot collide with the other apps.
+
+- **Money:** "Ready to distribute" is the Garage Fund ledger balance minus what is already allocated to targets. Allocating is a planning earmark, it does not add ledger rows. Log income in the Ledger and the pool grows.
+- **Storage:** everything is saved in the Garage Fund state under the `planner` key (`targets`, `ideas`, `plan`, `books`), so **Settings → Export / Import JSON** already backs it up. No schema migration was needed.
+- **Theme:** the iOS-26-style glass look is one `<style id="glass-theme">` block at the end of `<head>`. It only restyles shared class names and colour variables. Remove the block to get the original Material look back.

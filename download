@@ -1,0 +1,13 @@
+# Personal data — never commit exported ledgers or backups
+*.json
+!package.json
+!vercel.json
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Vercel
+.vercel/
