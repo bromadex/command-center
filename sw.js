@@ -3,7 +3,7 @@
 // a cache fallback for offline. Cache-first for the manifest and icons since they
 // rarely change and the SW version bump handles updates.
 
-const CACHE = 'command-center-v3-glass';
+const CACHE = 'command-center-v4-money';
 const SHELL = [
   '/',
   '/index.html',

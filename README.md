@@ -5,7 +5,7 @@ A single-file personal command center in a purple liquid-glass (iOS 26 inspired)
 | Section | What it holds |
 | --- | --- |
 | **Overview** | Balance, income/expenses, debts, target progress, charts, recent activity, priorities, quick actions |
-| **Money** | Transactions (income, expense, transfers, recurring), budgets, forecast, Shein affiliate earnings |
+| **Money** | Balance hero with period switch, a day-grouped transaction timeline, add/edit in a glass sheet (income, expense, transfers, repeat), spending breakdown, recurring list, Shein affiliate earnings |
 | **Debts** | Owed to you / you owe, partial settlement, overdue tracking |
 | **Flips** | Inventory, purchases, sales, realized vs projected profit |
 | **Targets** | Flexible goals; allocate money as a planning earmark |
@@ -53,3 +53,9 @@ Desktop Chrome/Edge: install icon in the address bar. Android: "Install app". iO
 4. Planner script (Targets, Ideas, Study plan, Books) — exposes `window.Planner`.
 5. Calculator script.
 6. Shell script — navigation, hash routing (`#/money/budgets`), global search (Ctrl/Cmd+K), quick add, Overview and its SVG charts.
+
+## Notes on Money (v4)
+
+- Budgets and Forecast were removed from the interface. Existing `budgets` records are **not** deleted: they stay in storage and in every export, they are just no longer shown.
+- Add or edit a transaction from anywhere with the **+** button; it opens a glass sheet. Filters (type, period, search) reset to "All / This month" on launch.
+- The service worker cache is `command-center-v4-money`; the first load after deploying fetches fresh files.
