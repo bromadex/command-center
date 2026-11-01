@@ -437,6 +437,29 @@ tbody tr:last-child td{border-bottom:0}
 .mny-empty .material-symbols-outlined{font-size:38px;color:var(--cc-lav)}.mny-empty b{color:var(--cc-ink);font-size:17px}
 .mny-side{display:grid;gap:18px;align-self:start;position:sticky;top:92px}
 .mny-card{padding:20px;border-radius:var(--r-xl)}
+/* Money → Analysis */
+.ana{display:grid;gap:18px}
+.ana-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.ana-top h2{font-size:20px;margin:0}.ana-top small{display:block;color:var(--cc-ink-2);font-size:13px;margin-top:2px}
+.ana-tiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.ana-tiles .stat small{display:block;font-size:12px;color:var(--cc-ink-2);margin-top:4px}
+.ana-ins{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+.ana-ins li{display:flex;gap:12px;align-items:flex-start;font-size:14.5px;line-height:1.45}
+.ana-ins li .material-symbols-outlined{font-size:20px;flex:none;margin-top:1px}
+.ana-ins li.i-good .material-symbols-outlined{color:var(--cc-good)}.ana-ins li.i-bad .material-symbols-outlined{color:var(--cc-bad)}.ana-ins li.i-warn .material-symbols-outlined{color:var(--cc-warn)}.ana-ins li.i-info .material-symbols-outlined{color:var(--cc-lav)}
+.ana .chart-wrap svg{max-height:280px}
+.ana-dow{display:flex;justify-content:space-between;gap:8px;font-size:13.5px}
+.ana-cat{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:4px 12px;align-items:center;width:100%;text-align:left;border:0;background:transparent;color:inherit;font:inherit;padding:6px 0;cursor:pointer}
+.ana-cat:hover>span:first-child{color:var(--cc-lav)}
+.ana-cat .cc-bar{grid-column:1/-1}
+.ana-cat .d{font-size:12.5px;min-width:64px;text-align:right}
+.ana-list{display:grid;gap:6px}
+.ana-row{display:flex;justify-content:space-between;gap:12px;font-size:14px;padding:6px 0;border-bottom:1px solid var(--cc-line)}
+.ana-row:last-child{border-bottom:0}.ana-row small{display:block;color:var(--cc-ink-2);font-size:12px}
+.ana-split{display:flex;height:12px;border-radius:99px;overflow:hidden;background:rgba(255,255,255,.1);margin:6px 0 10px}
+.ana-split i{display:block;height:100%}
+@media (max-width:1100px){.ana-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:640px){.ana-tiles{grid-template-columns:1fr 1fr}.ana-top .seg2{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%}.ana-top .seg2 button{padding:8px 2px;font-size:12.5px;text-align:center}}
 .mny-card h3{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:16px;margin:0 0 14px}
 .mny-card h3 .muted{font:500 12.5px var(--font)}
 .mny-cats{display:grid;gap:14px}
@@ -717,6 +740,10 @@ tbody tr:last-child td{border-bottom:0}
       </form>
     </div>
     <div class="card" style="margin-top:16px" id="sheinCard"></div>
+  </section>
+
+  <section id="view-analysis" hidden>
+    <div class="ana" id="anaHost"></div>
   </section>
 
   <section id="view-settings" hidden>
@@ -1767,7 +1794,7 @@ const Events = (() => {
   }
 
   // The shell (navigation) decides which view is visible; this just toggles the sections.
-  const VIEWS = ['ledger', 'people', 'flips', 'shein', 'settings'];
+  const VIEWS = ['ledger', 'analysis', 'people', 'flips', 'shein', 'settings'];
   function showTab(tab) {
     if (!VIEWS.includes(tab)) tab = 'ledger';   // e.g. a saved 'dashboard' or retired 'goal' tab
     VIEWS.forEach(v => { document.getElementById('view-' + v).hidden = (v !== tab); });
@@ -3942,7 +3969,7 @@ const mi=n=>`<span class="material-symbols-outlined" aria-hidden="true">${n}</sp
 const SC_TABS=[['sc-dashboard','Study overview','dashboard'],['sc-pmp','PMP','military_tech'],['sc-pte','PTE Academic','translate'],['sc-codesys','CODESYS','memory'],['sc-bible','Bible','auto_stories'],['sc-reading','Reading log','menu_book'],['sc-todo','To-Do','checklist']];
 const PAGES={
  overview:{label:'Overview',icon:'space_dashboard',el:'app-overview',sub:'Your money and progress at a glance'},
- money:{label:'Money',icon:'account_balance_wallet',el:'app-garage-fund',sub:'Everything coming in and going out',views:[['ledger','Transactions','receipt_long'],['shein','Shein affiliate','storefront']]},
+ money:{label:'Money',icon:'account_balance_wallet',el:'app-garage-fund',sub:'Everything coming in and going out',views:[['ledger','Transactions','receipt_long'],['analysis','Analysis','insights'],['shein','Shein affiliate','storefront']]},
  debts:{label:'Debts',icon:'handshake',el:'app-garage-fund',gf:'people',sub:'Money owed to you and money you owe'},
  flips:{label:'Flips',icon:'inventory_2',el:'app-garage-fund',gf:'flips',sub:'Buy, receive, sell and measure profit'},
  targets:{label:'Targets',icon:'flag',el:'app-planner',pv:'targets',sub:'Decide where your money goes'},
@@ -3983,6 +4010,7 @@ function go(page,sub,opts){
     else{CC_SC.show(sub.replace('sc-',''))}
   }
   if(page==='overview')renderOverview();
+  if(page==='money'&&sub==='analysis')renderAnalysis();
   // titles + subnav
   let title=P.label,subt=P.sub;
   if(page==='study'&&sub==='plan'){subt=Planner.head('study')[1]}
@@ -4188,7 +4216,140 @@ function renderOverview(){
   const rc=$('#ovRecurring');if(rc)rc.addEventListener('click',()=>CC_GF.processRecurring());
 }
 
-window.CC={go,refresh(){badges();if(cur.page==='overview')renderOverview()},badges};
+/* ---------- Money → Analysis: how the money is being used ---------- */
+const ANA_P=[['month','This month'],['last','Last month'],['3m','3 months'],['6m','6 months'],['12m','12 months'],['all','All time']];
+const isoOf=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const anaGroup=c=>/^Flip: /.test(c||'')?'Flip purchases':/^Debt Settlement/.test(c||'')?'Debt settlements':/^Target: /.test(c||'')?'Target spending':(c||'Uncategorised');
+const anaPrefix={'Flip purchases':'Flip: ','Debt settlements':'Debt Settlement','Target spending':'Target: '};
+function anaRange(p){
+  const t=Utils.todayISO(),now=new Date(t+'T00:00:00'),Y=now.getFullYear(),M=now.getMonth(),D=now.getDate();
+  const first=(y,m)=>isoOf(new Date(y,m,1)),last=(y,m)=>isoOf(new Date(y,m+1,0));
+  if(p==='last')return{from:first(Y,M-1),to:last(Y,M-1),label:Utils.monthLabel(first(Y,M-1).slice(0,7)),pf:first(Y,M-2),pt:last(Y,M-2),pl:'the month before'};
+  if(p==='3m'||p==='6m'||p==='12m'){const n=parseInt(p);return{from:first(Y,M-n+1),to:t,label:'Last '+n+' months',pf:first(Y,M-2*n+1),pt:last(Y,M-n),pl:'the '+n+' months before'}}
+  if(p==='all')return{from:'0000-01-01',to:t,label:'All time'};
+  // this month: compare with the same number of days at the start of last month
+  const pd=Math.min(D,new Date(Y,M,0).getDate());
+  return{from:first(Y,M),to:t,label:Utils.monthLabel(t.slice(0,7)),pf:first(Y,M-1),pt:isoOf(new Date(Y,M-1,pd)),pl:'the same days last month'};
+}
+function anaStats(tx,from,to){
+  const rows=tx.filter(t=>t.date>=from&&t.date<=to);
+  const exp=rows.filter(t=>t.type==='expense'),inc=rows.filter(t=>t.type==='income');
+  const sum=a=>a.reduce((x,t)=>x+t.amountCents,0);
+  const cats={};exp.forEach(t=>{const k=anaGroup(t.category);cats[k]=(cats[k]||0)+t.amountCents});
+  const src={};inc.forEach(t=>{const k=t.category||'Uncategorised';src[k]=(src[k]||0)+t.amountCents});
+  return{rows,exp,inc,spent:sum(exp),earned:sum(inc),cats,src};
+}
+const pct=(a,b)=>b?Math.round(a/b*100):0;
+const delta=(now,prev)=>{if(!prev)return now?null:0;return Math.round((now-prev)/prev*100)};
+function renderAnalysis(){
+  const host=document.getElementById('anaHost');if(!host)return;
+  const s=Store.get(),tx=s.transactions||[],today=Utils.todayISO();
+  let per=ls.get('cc.ana.period')||'month';if(!ANA_P.some(x=>x[0]===per))per='month';
+  const r=anaRange(per),A=anaStats(tx,r.from,r.to),B=r.pf?anaStats(tx,r.pf,r.pt):null;
+  const head=`<div class="ana-top"><div><h2>How you use your money</h2><small>${esc(r.label)}${B?' · compared with '+esc(r.pl):''}</small></div><div class="seg2" role="group" aria-label="Analysis period">${ANA_P.map(([k,l])=>`<button data-anap="${k}" aria-pressed="${k===per}">${l}</button>`).join('')}</div></div>`;
+  if(!tx.some(t=>t.type==='expense'||t.type==='income')){host.innerHTML=head+`<div class="glass empty mny-empty"><span class="material-symbols-outlined">insights</span><b>Nothing to analyse yet</b><span>Record income and expenses and this page shows where your money goes.</span><button class="btn primary" data-quick="expense">Record an expense</button></div>`;return}
+  // days in the period that have actually passed (for daily averages)
+  const firstTx=tx.reduce((m,t)=>t.date<m?t.date:m,today);
+  const startD=r.from>firstTx?r.from:firstTx,endD=r.to<today?r.to:today;
+  const days=Math.max(1,Math.round((new Date(endD+'T00:00:00')-new Date(startD+'T00:00:00'))/864e5)+1);
+  const net=A.earned-A.spent,rate=A.earned?Math.round(net/A.earned*100):null;
+  const dSpent=B?delta(A.spent,B.spent):null,dEarn=B?delta(A.earned,B.earned):null;
+  const chg=(d,goodWhenDown)=>d===null||d===undefined?'':d===0?'<small>Same as before</small>':`<small class="${(d<0)===goodWhenDown?'pos':'neg'}">${d>0?'▲':'▼'} ${Math.abs(d)}% vs before</small>`;
+  const tiles=`<div class="ana-tiles">
+    <div class="stat"><div class="k">Money in</div><div class="v pos">${fmt(A.earned)}</div>${B?chg(dEarn,false):''}</div>
+    <div class="stat"><div class="k">Money out</div><div class="v neg">${fmt(A.spent)}</div>${B?chg(dSpent,true):''}</div>
+    <div class="stat"><div class="k">Kept</div><div class="v ${net>=0?'pos':'neg'}">${net>=0?'+':'−'}${fmt(Math.abs(net))}</div><small>Income minus spending</small></div>
+    <div class="stat"><div class="k">Savings rate</div><div class="v ${rate===null?'':rate>=0?'pos':'neg'}">${rate===null?'–':rate+'%'}</div><small>${rate===null?'No income in this period':'Of income kept'}</small></div>
+    <div class="stat"><div class="k">Daily spend</div><div class="v">${fmt(Math.round(A.spent/days))}</div><small>Average over ${days} day${days===1?'':'s'}</small></div>
+  </div>`;
+  // categories with change vs previous period
+  const cats=Object.entries(A.cats).map(([name,v])=>({name,v,p:B?(B.cats[name]||0):0})).sort((a,b)=>b.v-a.v);
+  const gone=B?Object.entries(B.cats).filter(([n])=>!A.cats[n]).map(([name,p])=>({name,v:0,p})):[];
+  // fixed (repeating) vs one-off spending, based on categories you have set to repeat
+  const fixedCats=new Set(tx.filter(t=>t.recurring&&t.type==='expense').map(t=>anaGroup(t.category)));
+  const fixed=A.exp.filter(t=>fixedCats.has(anaGroup(t.category))).reduce((a,t)=>a+t.amountCents,0),flex=A.spent-fixed;
+  // day of week
+  const DOW=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],dow=[0,0,0,0,0,0,0];
+  A.exp.forEach(t=>{const g=new Date(t.date+'T00:00:00').getDay();dow[(g+6)%7]+=t.amountCents});
+  const dmax=Math.max(1,...dow),topDow=dow.indexOf(Math.max(...dow));
+  // biggest single expenses
+  const big=[...A.exp].sort((a,b)=>b.amountCents-a.amountCents).slice(0,5);
+  // monthly trend (6 or 12 months)
+  const nM=per==='12m'||per==='all'?12:6,ms=monthsBack(nM),byM=Object.fromEntries(ms.map(m=>[m,{a:0,b:0}]));
+  tx.forEach(t=>{const m=Utils.monthKey(t.date);if(byM[m]){if(t.type==='income')byM[m].a+=t.amountCents;if(t.type==='expense')byM[m].b+=t.amountCents}});
+  const bars=ms.map(m=>({label:new Date(m+'-01T00:00:00').toLocaleDateString(undefined,{month:'short'}),...byM[m]}));
+  const monthsWithSpend=bars.filter(b=>b.b);const avgM=monthsWithSpend.length?Math.round(monthsWithSpend.reduce((a,b)=>a+b.b,0)/monthsWithSpend.length):0;
+  // spending habits
+  const nBuy=A.exp.length,avgBuy=nBuy?Math.round(A.spent/nBuy):0;
+  const amts=A.exp.map(t=>t.amountCents).sort((a,b)=>a-b),median=nBuy?amts[Math.floor((nBuy-1)/2)]:0;
+  const SMALL=2000,small=A.exp.filter(t=>t.amountCents<SMALL),smallSum=small.reduce((a,t)=>a+t.amountCents,0);
+  const spendDays=new Set(A.exp.map(t=>t.date)),noSpend=Math.max(0,days-[...spendDays].filter(d=>d>=startD&&d<=endD).length);
+  let streak=0,best=0;for(let d=new Date(startD+'T00:00:00');isoOf(d)<=endD;d.setDate(d.getDate()+1)){if(spendDays.has(isoOf(d)))streak=0;else{streak++;best=Math.max(best,streak)}}
+  const wkEnd=dow[5]+dow[6],wkDay=A.spent-wkEnd,wkEndDays=[...Array(days)].reduce((a,_,i)=>{const d=new Date(startD+'T00:00:00');d.setDate(d.getDate()+i);const g=d.getDay();return a+(g===0||g===6?1:0)},0),wkDayDays=days-wkEndDays;
+  const perWkEnd=wkEndDays?Math.round(wkEnd/wkEndDays):0,perWkDay=wkDayDays?Math.round(wkDay/wkDayDays):0;
+  const thirds=[0,0,0];A.exp.forEach(t=>{const dd=+t.date.slice(8,10);thirds[dd<=10?0:dd<=20?1:2]+=t.amountCents});
+  const cnt={};A.exp.forEach(t=>{const k=anaGroup(t.category);cnt[k]=(cnt[k]||0)+1});const freq=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0];
+  const perWeek=nBuy?(nBuy/days*7):0;
+  // plain-language insights
+  const ins=[];
+  if(A.earned){if(net>=0)ins.push(['good','savings',`You kept <b>${rate}%</b> of what came in (${fmt(net)}).${rate<10?' Aim for at least 10–20% if you can.':rate>=20?' That is a healthy savings rate.':''}`]);
+    else ins.push(['bad','warning',`You spent <b>${fmt(-net)}</b> more than you earned. That gap came out of your balance.`])}
+  else if(A.spent)ins.push(['warn','info',`No income recorded in this period, so all ${fmt(A.spent)} of spending came from your balance.`]);
+  if(cats.length){const c=cats[0];ins.push(['info','pie_chart',`Your biggest spending area is <b>${esc(c.name)}</b>: ${fmt(c.v)}, or ${pct(c.v,A.spent)}% of everything you spent.`]);
+    const top3=cats.slice(0,3).reduce((a,c)=>a+c.v,0);if(cats.length>3)ins.push(['info','stacked_bar_chart',`Your top 3 categories take <b>${pct(top3,A.spent)}%</b> of your spending. Cutting these is where it makes the most difference.`])}
+  if(B&&B.spent){const d=delta(A.spent,B.spent);if(Math.abs(d)>=5)ins.push([d>0?'warn':'good',d>0?'trending_up':'trending_down',`You spent <b>${Math.abs(d)}% ${d>0?'more':'less'}</b> than ${esc(r.pl)} (${fmt(B.spent)} then, ${fmt(A.spent)} now).`]);
+    const up=cats.filter(c=>c.v-c.p>0).sort((a,b)=>(b.v-b.p)-(a.v-a.p))[0];if(up&&up.v-up.p>=Math.max(1,A.spent*.05))ins.push(['warn','arrow_upward',`<b>${esc(up.name)}</b> grew the most: up ${fmt(up.v-up.p)}${up.p?' ('+delta(up.v,up.p)+'%)':', new this period'}.`]);
+    const down=cats.concat(gone).filter(c=>c.p-c.v>0).sort((a,b)=>(b.p-b.v)-(a.p-a.v))[0];if(down&&down.p-down.v>=Math.max(1,A.spent*.05))ins.push(['good','arrow_downward',`You cut back most on <b>${esc(down.name)}</b>: down ${fmt(down.p-down.v)}.`])}
+  if(A.spent&&fixed)ins.push(['info','autorenew',`<b>${pct(fixed,A.spent)}%</b> of your spending is in repeating categories (${fmt(fixed)}). The other ${fmt(flex)} is day-to-day spending you control more easily.`]);
+  if(A.exp.length>=5&&dow[topDow])ins.push(['info','calendar_month',`You spend the most on <b>${DOW[topDow]}s</b> (${pct(dow[topDow],A.spent)}% of spending).`]);
+  if(small.length>=5&&pct(smallSum,A.spent)>=10)ins.push(['warn','coffee',`Small purchases add up: <b>${small.length}</b> buys under ${fmt(SMALL)} came to ${fmt(smallSum)} (${pct(smallSum,A.spent)}% of spending).`]);
+  if(perWkEnd&&perWkDay&&perWkEnd>perWkDay*1.5)ins.push(['warn','weekend',`You spend about <b>${(perWkEnd/perWkDay).toFixed(1)}×</b> more per day on weekends (${fmt(perWkEnd)}) than on weekdays (${fmt(perWkDay)}).`]);
+  if(per!=='month'&&A.spent&&pct(thirds[0],A.spent)>=50)ins.push(['warn','event',`<b>${pct(thirds[0],A.spent)}%</b> of your spending happens in the first 10 days of the month. Spending soon after money comes in is a common habit worth watching.`]);
+  if(days>=7&&noSpend)ins.push(['good','block',`You had <b>${noSpend}</b> no-spend day${noSpend===1?'':'s'} out of ${days}${best>1?', with a best run of '+best+' in a row':''}.`]);
+  if(big[0]&&A.spent&&pct(big[0].amountCents,A.spent)>=25)ins.push(['warn','priority_high',`One purchase, <b>${esc(big[0].category)}</b> on ${big[0].date}, was ${pct(big[0].amountCents,A.spent)}% of all spending.`]);
+  if(per==='month'&&A.spent){const dim=new Date(+today.slice(0,4),+today.slice(5,7),0).getDate(),proj=Math.round(A.spent/days*dim);ins.push(['info','query_stats',`At this pace you will spend about <b>${fmt(proj)}</b> this month${avgM?`, against a ${nM}-month average of ${fmt(avgM)}`:''}.`])}
+  const catHtml=cats.length?`<div class="ana-list">${cats.map((c,i)=>{const d=B?(c.p?delta(c.v,c.p):null):undefined;return `<button class="ana-cat" data-anacat="${esc(anaPrefix[c.name]||c.name)}"><span>${esc(c.name)}</span><b class="num">${fmt(c.v)}</b><span class="d num ${d===undefined?'muted':d===null?'warn':d>0?'neg':d<0?'pos':'muted'}">${d===undefined?pct(c.v,A.spent)+'%':d===null?'new':(d>0?'▲ ':d<0?'▼ ':'')+Math.abs(d)+'%'}</span><span class="cc-bar"><i style="width:${Math.max(3,c.v/cats[0].v*100)}%;background:${PAL[i%PAL.length]}"></i></span></button>`}).join('')}</div>${B?'<p class="muted" style="font-size:12px;margin:10px 0 0">Arrows compare each category with '+esc(r.pl)+'. Tap one to see its transactions.</p>':''}`:'<div class="empty">No spending in this period.</div>';
+  const srcs=Object.entries(A.src).map(([name,v])=>({name,v})).sort((a,b)=>b.v-a.v);
+  const srcHtml=srcs.length?`<div class="ana-list">${srcs.map(x=>`<div class="ana-row"><span>${esc(x.name)}<small>${pct(x.v,A.earned)}% of income</small></span><b class="num pos">${fmt(x.v)}</b></div>`).join('')}</div>`:'<div class="empty">No income in this period.</div>';
+  const splitHtml=A.spent?`<div class="ana-split"><i style="flex:${fixed};background:${C.info}"></i><i style="flex:${flex};background:${C.purple}"></i></div><div class="chart-legend" style="margin-top:0"><span><i style="background:${C.info}"></i>Repeating ${fmt(fixed)} · ${pct(fixed,A.spent)}%</span><span><i style="background:${C.purple}"></i>Day-to-day ${fmt(flex)} · ${pct(flex,A.spent)}%</span></div>${fixedCats.size?'':'<p class="muted" style="font-size:12.5px;margin:10px 0 0">Mark bills as “Repeat” when you add them to see fixed costs separately.</p>'}`:'<div class="empty">No spending in this period.</div>';
+  const dowHtml=A.spent?`<div class="ana-list">${DOW.map((d,i)=>`<div><div class="ana-dow"><span>${d}</span><b class="num">${fmt(dow[i])}</b></div><div class="cc-bar" style="margin-top:4px"><i style="width:${dow[i]?Math.max(3,dow[i]/dmax*100):0}%"></i></div></div>`).join('')}</div>`:'<div class="empty">No spending in this period.</div>';
+  const bigHtml=big.length?`<div class="ana-list">${big.map(t=>`<div class="ana-row"><span>${esc(t.category)}<small>${t.date}${t.note?' · '+esc(t.note):''}</small></span><b class="num neg">−${fmt(t.amountCents)}</b></div>`).join('')}</div>`:'<div class="empty">No spending in this period.</div>';
+  const hab=(k,v,sub)=>`<div class="stat"><div class="k">${k}</div><div class="v">${v}</div>${sub?`<small>${sub}</small>`:''}</div>`;
+  const habHtml=nBuy?`<div class="ana-tiles">
+    ${hab('Purchases',nBuy,perWeek.toFixed(1)+' a week')}
+    ${hab('Typical purchase',fmt(median),'Average '+fmt(avgBuy))}
+    ${hab('Small buys',small.length,'Under '+fmt(SMALL)+' · '+fmt(smallSum)+' total')}
+    ${hab('No-spend days',noSpend+' / '+days,best>1?'Best run '+best+' days':'')}
+    ${hab('Most frequent',freq?esc(freq[0]):'–',freq?freq[1]+' purchase'+(freq[1]===1?'':'s'):'')}
+   </div>
+   <div class="ov-grid2" style="margin-top:16px">
+    <div><div class="k muted" style="font-size:12.5px;margin-bottom:6px">Per day: weekdays vs weekends</div><div class="ana-split"><i style="flex:${perWkDay};background:${C.info}"></i><i style="flex:${perWkEnd};background:${C.warn}"></i></div><div class="chart-legend" style="margin-top:0"><span><i style="background:${C.info}"></i>Weekday ${fmt(perWkDay)}/day</span><span><i style="background:${C.warn}"></i>Weekend ${fmt(perWkEnd)}/day</span></div></div>
+    <div><div class="k muted" style="font-size:12.5px;margin-bottom:6px">When in the month you spend</div><div class="ana-split"><i style="flex:${thirds[0]};background:${C.purple}"></i><i style="flex:${thirds[1]};background:${C.lav}"></i><i style="flex:${thirds[2]};background:${C.good}"></i></div><div class="chart-legend" style="margin-top:0"><span><i style="background:${C.purple}"></i>1st–10th ${pct(thirds[0],A.spent)}%</span><span><i style="background:${C.lav}"></i>11th–20th ${pct(thirds[1],A.spent)}%</span><span><i style="background:${C.good}"></i>21st+ ${pct(thirds[2],A.spent)}%</span></div></div>
+   </div>`:'<div class="empty">No spending in this period.</div>';
+  host.innerHTML=head+tiles+`
+   <section class="card"><div class="ov-head"><h2>What this tells you</h2></div>${ins.length?`<ul class="ana-ins">${ins.map(([c,i,t])=>`<li class="i-${c}">${mi(i)}<span>${t}</span></li>`).join('')}</ul>`:'<div class="empty">Not enough activity in this period for insights.</div>'}</section>
+   <section class="card"><div class="ov-head"><h2>Spending habits</h2><span class="muted" style="font-size:12.5px">${esc(r.label)}</span></div>${habHtml}</section>
+   <div class="ov-grid2">
+    <section class="card"><div class="ov-head"><h2>Where your money went</h2><span class="muted" style="font-size:12.5px">${fmt(A.spent)}</span></div>${catHtml}</section>
+    <section class="card"><div class="ov-head"><h2>Spending share</h2></div>${cats.length?donut(cats.length>6?[...cats.slice(0,5),{name:'Other',v:cats.slice(5).reduce((a,c)=>a+c.v,0)}]:cats):'<div class="empty">No spending in this period.</div>'}</section>
+   </div>
+   <section class="card"><div class="ov-head"><h2>Month by month</h2><span class="muted" style="font-size:12.5px">Last ${nM} months${avgM?' · avg spend '+fmt(avgM):''}</span></div>${bars.some(b=>b.a||b.b)?`<div class="chart-wrap">${barChart(bars)}</div>`:'<div class="empty">No activity in these months.</div>'}</section>
+   <div class="ov-grid2">
+    <section class="card"><div class="ov-head"><h2>Fixed vs day-to-day</h2></div>${splitHtml}</section>
+    <section class="card"><div class="ov-head"><h2>Where your money came from</h2><span class="muted" style="font-size:12.5px">${fmt(A.earned)}</span></div>${srcHtml}</section>
+   </div>
+   <div class="ov-grid2">
+    <section class="card"><div class="ov-head"><h2>Biggest expenses</h2></div>${bigHtml}</section>
+    <section class="card"><div class="ov-head"><h2>Spending by day of week</h2></div>${dowHtml}</section>
+   </div>
+   <p class="muted" style="font-size:12px;margin:0">Transfers are left out because they move money rather than spend it. Flip purchases, debt settlements and target spending are grouped so you can see them apart from everyday costs.</p>`;
+}
+document.addEventListener('click',e=>{
+  const p=e.target.closest('[data-anap]');if(p){ls.set('cc.ana.period',p.dataset.anap);renderAnalysis();return}
+  const c=e.target.closest('[data-anacat]');if(c){go('money','ledger');const i=document.getElementById('ledgerSearch');if(i)i.value=c.dataset.anacat;window.__ledgerQuery=c.dataset.anacat;window.__ledgerLimit=40;Store.set({ui:{...Store.get().ui,ledgerPeriod:'all',ledgerFilter:'expense'}});Render.ledger()}
+});
+
+window.CC={go,refresh(){badges();if(cur.page==='overview')renderOverview();if(cur.page==='money'&&cur.sub==='analysis')renderAnalysis()},badges};
 
 buildNav();
 setCollapsed(ls.get('cc.collapsed')==='1');
