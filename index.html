@@ -449,8 +449,7 @@ tbody tr:last-child td{border-bottom:0}
 .ana-ins li.i-good .material-symbols-outlined{color:var(--cc-good)}.ana-ins li.i-bad .material-symbols-outlined{color:var(--cc-bad)}.ana-ins li.i-warn .material-symbols-outlined{color:var(--cc-warn)}.ana-ins li.i-info .material-symbols-outlined{color:var(--cc-lav)}
 .ana .chart-wrap svg{max-height:280px}
 .ana-dow{display:flex;justify-content:space-between;gap:8px;font-size:13.5px}
-.ana-cat{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:4px 12px;align-items:center;width:100%;text-align:left;border:0;background:transparent;color:inherit;font:inherit;padding:6px 0;cursor:pointer}
-.ana-cat:hover>span:first-child{color:var(--cc-lav)}
+.ana-cat{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:4px 12px;align-items:center;width:100%;text-align:left;border:0;background:transparent;color:inherit;font:inherit;padding:6px 0;}
 .ana-cat .cc-bar{grid-column:1/-1}
 .ana-cat .d{font-size:12.5px;min-width:64px;text-align:right}
 .ana-list{display:grid;gap:6px}
@@ -4219,8 +4218,42 @@ function renderOverview(){
 /* ---------- Money → Analysis: how the money is being used ---------- */
 const ANA_P=[['month','This month'],['last','Last month'],['3m','3 months'],['6m','6 months'],['12m','12 months'],['all','All time']];
 const isoOf=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-const anaGroup=c=>/^Flip: /.test(c||'')?'Flip purchases':/^Debt Settlement/.test(c||'')?'Debt settlements':/^Target: /.test(c||'')?'Target spending':(c||'Uncategorised');
-const anaPrefix={'Flip purchases':'Flip: ','Debt settlements':'Debt Settlement','Target spending':'Target: '};
+/* Standard categories. Your own category names stay untouched in the ledger; these
+   rules only decide which standard group each one counts under here. First match wins.
+   kind: earned = real income · repaid/borrowed = money in that is not income
+         living = everyday spending · people = lent or given to people
+         debt = paying back what you owe · invest = savings, property, home · business = flip stock and costs */
+const CAT_IN=[
+ [/^salary|wage|payslip/i,'Salary','earned'],
+ [/^flip sale/i,'Flip sales','earned'],
+ [/shein|affiliate/i,'Shein affiliate','earned'],
+ [/deal|calibration|satchel|weights|commission|job|gig/i,'Side deals','earned'],
+ [/^debt settlement|repaid|paid back/i,'Debts repaid to you','repaid'],
+ [/borrow|loan/i,'Borrowed money','borrowed']];
+const CAT_OUT=[
+ [/^debt settlement|\|\s*debt\b/i,'Debt repayments','debt'],
+ [/^target: /i,'Savings & property','invest'],
+ [/^flip: |mascots?\)|incubator|stock/i,'Flip stock & costs','business'],
+ [/solar|tiling|tiles|cement|building|gate|jojo|pump/i,'Home improvements','invest'],
+ [/\brent\b|^rent|lodging|accommodation/i,'Rent & housing','living'],
+ [/pill|medic|clinic|doctor|hospital|pharma|acid/i,'Health & medicine','living'],
+ [/\bmoms?\b|gogo|family|parents?\b/i,'Family support','living'],
+ [/grocer|food|pots|household|kitchen/i,'Groceries & household','living'],
+ [/donation|appreciation|gift|camp|church|funeral|tithe/i,'Gifts & donations','living'],
+ [/bank|charges?\b|fee\b|ecocash/i,'Bank & transfer charges','living'],
+ [/fuel|transport|indrive|taxi|bus\b|kombi|kamativi|trip/i,'Transport & travel','living'],
+ [/airtime|\bdata\b|bundle/i,'Airtime & data','living'],
+ [/bet/i,'Betting','living'],
+ [/\bfun\b|entertain|night|crossdete|party|drinks/i,'Entertainment','living'],
+ [/hair|salon|barber|clothes|shoes/i,'Personal care & clothes','living'],
+ [/claude|subscription|\bads\b|software|netflix/i,'Subscriptions & ads','living'],
+ [/form\b|admin|application|licen[cs]e/i,'Fees & admin','living'],
+ [/ to |vanessa|takunda|sheila|prosper|tonde|wendy|john|nyasha/i,'Lent or given to people','people']];
+const catOf=t=>{const txt=(t.category||'')+' | '+(t.note||'');
+  if(t.type==='income'){for(const[r,g,k]of CAT_IN)if(r.test(txt))return{g,k};return{g:'Other income',k:'earned'}}
+  if(t.type==='expense'){for(const[r,g,k]of CAT_OUT)if(r.test(txt))return{g,k};return{g:'Other spending',k:'living'}}
+  return{g:'Transfers',k:'transfer'}};
+const SPEND_KINDS=['living','people'];
 function anaRange(p){
   const t=Utils.todayISO(),now=new Date(t+'T00:00:00'),Y=now.getFullYear(),M=now.getMonth(),D=now.getDate();
   const first=(y,m)=>isoOf(new Date(y,m,1)),last=(y,m)=>isoOf(new Date(y,m+1,0));
@@ -4233,11 +4266,15 @@ function anaRange(p){
 }
 function anaStats(tx,from,to){
   const rows=tx.filter(t=>t.date>=from&&t.date<=to);
-  const exp=rows.filter(t=>t.type==='expense'),inc=rows.filter(t=>t.type==='income');
+  const flow={},names={};
+  rows.forEach(t=>{const c=catOf(t);flow[c.k]=(flow[c.k]||0)+t.amountCents;(names[c.g]=names[c.g]||new Set()).add((t.category||'').replace(/^(Debt Settlement|Flip Sale|Flip|Target): .*/,'$1'))});
+  // "spending" = everyday costs + money to people; "earned" = real income only
+  const exp=rows.filter(t=>t.type==='expense'&&SPEND_KINDS.includes(catOf(t).k)),inc=rows.filter(t=>t.type==='income'&&catOf(t).k==='earned');
   const sum=a=>a.reduce((x,t)=>x+t.amountCents,0);
-  const cats={};exp.forEach(t=>{const k=anaGroup(t.category);cats[k]=(cats[k]||0)+t.amountCents});
-  const src={};inc.forEach(t=>{const k=t.category||'Uncategorised';src[k]=(src[k]||0)+t.amountCents});
-  return{rows,exp,inc,spent:sum(exp),earned:sum(inc),cats,src};
+  const cats={};exp.forEach(t=>{cats[catOf(t).g]=(cats[catOf(t).g]||0)+t.amountCents});
+  const src={};rows.filter(t=>t.type==='income').forEach(t=>{src[catOf(t).g]=(src[catOf(t).g]||0)+t.amountCents});
+  const allIn=sum(rows.filter(t=>t.type==='income')),allOut=sum(rows.filter(t=>t.type==='expense'));
+  return{rows,exp,inc,spent:sum(exp),earned:sum(inc),cats,src,flow,names,allIn,allOut};
 }
 const pct=(a,b)=>b?Math.round(a/b*100):0;
 const delta=(now,prev)=>{if(!prev)return now?null:0;return Math.round((now-prev)/prev*100)};
@@ -4256,9 +4293,9 @@ function renderAnalysis(){
   const dSpent=B?delta(A.spent,B.spent):null,dEarn=B?delta(A.earned,B.earned):null;
   const chg=(d,goodWhenDown)=>d===null||d===undefined?'':d===0?'<small>Same as before</small>':`<small class="${(d<0)===goodWhenDown?'pos':'neg'}">${d>0?'▲':'▼'} ${Math.abs(d)}% vs before</small>`;
   const tiles=`<div class="ana-tiles">
-    <div class="stat"><div class="k">Money in</div><div class="v pos">${fmt(A.earned)}</div>${B?chg(dEarn,false):''}</div>
-    <div class="stat"><div class="k">Money out</div><div class="v neg">${fmt(A.spent)}</div>${B?chg(dSpent,true):''}</div>
-    <div class="stat"><div class="k">Kept</div><div class="v ${net>=0?'pos':'neg'}">${net>=0?'+':'−'}${fmt(Math.abs(net))}</div><small>Income minus spending</small></div>
+    <div class="stat"><div class="k">Earned income</div><div class="v pos">${fmt(A.earned)}</div>${B?chg(dEarn,false):''}</div>
+    <div class="stat"><div class="k">Spending</div><div class="v neg">${fmt(A.spent)}</div>${B?chg(dSpent,true):''}</div>
+    <div class="stat"><div class="k">Kept</div><div class="v ${net>=0?'pos':'neg'}">${net>=0?'+':'−'}${fmt(Math.abs(net))}</div><small>Earned minus spending</small></div>
     <div class="stat"><div class="k">Savings rate</div><div class="v ${rate===null?'':rate>=0?'pos':'neg'}">${rate===null?'–':rate+'%'}</div><small>${rate===null?'No income in this period':'Of income kept'}</small></div>
     <div class="stat"><div class="k">Daily spend</div><div class="v">${fmt(Math.round(A.spent/days))}</div><small>Average over ${days} day${days===1?'':'s'}</small></div>
   </div>`;
@@ -4266,8 +4303,8 @@ function renderAnalysis(){
   const cats=Object.entries(A.cats).map(([name,v])=>({name,v,p:B?(B.cats[name]||0):0})).sort((a,b)=>b.v-a.v);
   const gone=B?Object.entries(B.cats).filter(([n])=>!A.cats[n]).map(([name,p])=>({name,v:0,p})):[];
   // fixed (repeating) vs one-off spending, based on categories you have set to repeat
-  const fixedCats=new Set(tx.filter(t=>t.recurring&&t.type==='expense').map(t=>anaGroup(t.category)));
-  const fixed=A.exp.filter(t=>fixedCats.has(anaGroup(t.category))).reduce((a,t)=>a+t.amountCents,0),flex=A.spent-fixed;
+  const fixedCats=new Set(tx.filter(t=>t.recurring&&t.type==='expense').map(t=>catOf(t).g));
+  const fixed=A.exp.filter(t=>fixedCats.has(catOf(t).g)).reduce((a,t)=>a+t.amountCents,0),flex=A.spent-fixed;
   // day of week
   const DOW=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],dow=[0,0,0,0,0,0,0];
   A.exp.forEach(t=>{const g=new Date(t.date+'T00:00:00').getDay();dow[(g+6)%7]+=t.amountCents});
@@ -4288,10 +4325,19 @@ function renderAnalysis(){
   const wkEnd=dow[5]+dow[6],wkDay=A.spent-wkEnd,wkEndDays=[...Array(days)].reduce((a,_,i)=>{const d=new Date(startD+'T00:00:00');d.setDate(d.getDate()+i);const g=d.getDay();return a+(g===0||g===6?1:0)},0),wkDayDays=days-wkEndDays;
   const perWkEnd=wkEndDays?Math.round(wkEnd/wkEndDays):0,perWkDay=wkDayDays?Math.round(wkDay/wkDayDays):0;
   const thirds=[0,0,0];A.exp.forEach(t=>{const dd=+t.date.slice(8,10);thirds[dd<=10?0:dd<=20?1:2]+=t.amountCents});
-  const cnt={};A.exp.forEach(t=>{const k=anaGroup(t.category);cnt[k]=(cnt[k]||0)+1});const freq=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0];
+  const cnt={};A.exp.forEach(t=>{const k=catOf(t).g;cnt[k]=(cnt[k]||0)+1});const freq=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0];
   const perWeek=nBuy?(nBuy/days*7):0;
+  const F=k=>A.flow[k]||0;
+  const flowRow=(l,v,cls,sub)=>v?`<div class="ana-row"><span>${l}<small>${sub}</small></span><b class="num ${cls}">${fmt(v)}</b></div>`:'';
+  const flowHtml=`<div class="ov-grid2"><div><div class="k muted" style="font-size:12.5px;margin-bottom:4px">Money in · ${fmt(A.allIn)}</div><div class="ana-list">${flowRow('Earned income',F('earned'),'pos','Salary, sales, deals, affiliate')+flowRow('Debts repaid to you',F('repaid'),'','Your money coming back')+flowRow('Borrowed',F('borrowed'),'neg','Must be paid back')||'<div class="empty">Nothing came in.</div>'}</div></div>
+    <div><div class="k muted" style="font-size:12.5px;margin-bottom:4px">Money out · ${fmt(A.allOut)}</div><div class="ana-list">${flowRow('Everyday spending',F('living'),'neg','Living costs and habits')+flowRow('Lent or given to people',F('people'),'neg','Check what comes back')+flowRow('Debt repayments',F('debt'),'','Paying back what you owe')+flowRow('Savings, property & home',F('invest'),'pos','Building assets')+flowRow('Flip stock & costs',F('business'),'','Comes back as flip sales')||'<div class="empty">Nothing went out.</div>'}</div></div></div>`;
   // plain-language insights
   const ins=[];
+  if(F('borrowed'))ins.push(['bad','account_balance',`<b>${fmt(F('borrowed'))}</b> of the money that came in was borrowed. It is not income and has to be paid back.`]);
+  if(F('repaid'))ins.push(['info','undo',`${fmt(F('repaid'))} was money people paid back to you. It is counted separately so it does not look like earnings.`]);
+  if(F('invest'))ins.push(['good','home',`You put <b>${fmt(F('invest'))}</b> into savings, property and your home.`]);
+  if(F('people')&&A.spent&&pct(F('people'),A.spent)>=10)ins.push(['warn','group',`${pct(F('people'),A.spent)}% of your spending (${fmt(F('people'))}) went to other people as loans or gifts.`]);
+  if(A.cats['Betting'])ins.push(['bad','casino',`Betting cost you <b>${fmt(A.cats['Betting'])}</b> in this period.`]);
   if(A.earned){if(net>=0)ins.push(['good','savings',`You kept <b>${rate}%</b> of what came in (${fmt(net)}).${rate<10?' Aim for at least 10–20% if you can.':rate>=20?' That is a healthy savings rate.':''}`]);
     else ins.push(['bad','warning',`You spent <b>${fmt(-net)}</b> more than you earned. That gap came out of your balance.`])}
   else if(A.spent)ins.push(['warn','info',`No income recorded in this period, so all ${fmt(A.spent)} of spending came from your balance.`]);
@@ -4308,9 +4354,9 @@ function renderAnalysis(){
   if(days>=7&&noSpend)ins.push(['good','block',`You had <b>${noSpend}</b> no-spend day${noSpend===1?'':'s'} out of ${days}${best>1?', with a best run of '+best+' in a row':''}.`]);
   if(big[0]&&A.spent&&pct(big[0].amountCents,A.spent)>=25)ins.push(['warn','priority_high',`One purchase, <b>${esc(big[0].category)}</b> on ${big[0].date}, was ${pct(big[0].amountCents,A.spent)}% of all spending.`]);
   if(per==='month'&&A.spent){const dim=new Date(+today.slice(0,4),+today.slice(5,7),0).getDate(),proj=Math.round(A.spent/days*dim);ins.push(['info','query_stats',`At this pace you will spend about <b>${fmt(proj)}</b> this month${avgM?`, against a ${nM}-month average of ${fmt(avgM)}`:''}.`])}
-  const catHtml=cats.length?`<div class="ana-list">${cats.map((c,i)=>{const d=B?(c.p?delta(c.v,c.p):null):undefined;return `<button class="ana-cat" data-anacat="${esc(anaPrefix[c.name]||c.name)}"><span>${esc(c.name)}</span><b class="num">${fmt(c.v)}</b><span class="d num ${d===undefined?'muted':d===null?'warn':d>0?'neg':d<0?'pos':'muted'}">${d===undefined?pct(c.v,A.spent)+'%':d===null?'new':(d>0?'▲ ':d<0?'▼ ':'')+Math.abs(d)+'%'}</span><span class="cc-bar"><i style="width:${Math.max(3,c.v/cats[0].v*100)}%;background:${PAL[i%PAL.length]}"></i></span></button>`}).join('')}</div>${B?'<p class="muted" style="font-size:12px;margin:10px 0 0">Arrows compare each category with '+esc(r.pl)+'. Tap one to see its transactions.</p>':''}`:'<div class="empty">No spending in this period.</div>';
+  const catHtml=cats.length?`<div class="ana-list">${cats.map((c,i)=>{const d=B?(c.p?delta(c.v,c.p):null):undefined;return `<div class="ana-cat"><span>${esc(c.name)}<small class="muted" style="display:block;font-size:11.5px">${esc([...(A.names[c.name]||[])].slice(0,4).join(', '))}${(A.names[c.name]||new Set()).size>4?'…':''}</small></span><b class="num">${fmt(c.v)}</b><span class="d num ${d===undefined?'muted':d===null?'warn':d>0?'neg':d<0?'pos':'muted'}">${d===undefined?pct(c.v,A.spent)+'%':d===null?'new':(d>0?'▲ ':d<0?'▼ ':'')+Math.abs(d)+'%'}</span><span class="cc-bar"><i style="width:${Math.max(3,c.v/cats[0].v*100)}%;background:${PAL[i%PAL.length]}"></i></span></div>`}).join('')}</div>${B?'<p class="muted" style="font-size:12px;margin:10px 0 0">Arrows compare each category with '+esc(r.pl)+'.</p>':''}`:'<div class="empty">No spending in this period.</div>';
   const srcs=Object.entries(A.src).map(([name,v])=>({name,v})).sort((a,b)=>b.v-a.v);
-  const srcHtml=srcs.length?`<div class="ana-list">${srcs.map(x=>`<div class="ana-row"><span>${esc(x.name)}<small>${pct(x.v,A.earned)}% of income</small></span><b class="num pos">${fmt(x.v)}</b></div>`).join('')}</div>`:'<div class="empty">No income in this period.</div>';
+  const srcHtml=srcs.length?`<div class="ana-list">${srcs.map(x=>{const earned=A.inc.some(t=>catOf(t).g===x.name);return `<div class="ana-row"><span>${esc(x.name)}<small>${earned?pct(x.v,A.earned)+'% of earned income':'Not income: '+(x.name==='Borrowed money'?'you have to pay it back':'your own money coming back')}</small></span><b class="num ${earned?'pos':'muted'}">${fmt(x.v)}</b></div>`}).join('')}</div>`:'<div class="empty">No income in this period.</div>';
   const splitHtml=A.spent?`<div class="ana-split"><i style="flex:${fixed};background:${C.info}"></i><i style="flex:${flex};background:${C.purple}"></i></div><div class="chart-legend" style="margin-top:0"><span><i style="background:${C.info}"></i>Repeating ${fmt(fixed)} · ${pct(fixed,A.spent)}%</span><span><i style="background:${C.purple}"></i>Day-to-day ${fmt(flex)} · ${pct(flex,A.spent)}%</span></div>${fixedCats.size?'':'<p class="muted" style="font-size:12.5px;margin:10px 0 0">Mark bills as “Repeat” when you add them to see fixed costs separately.</p>'}`:'<div class="empty">No spending in this period.</div>';
   const dowHtml=A.spent?`<div class="ana-list">${DOW.map((d,i)=>`<div><div class="ana-dow"><span>${d}</span><b class="num">${fmt(dow[i])}</b></div><div class="cc-bar" style="margin-top:4px"><i style="width:${dow[i]?Math.max(3,dow[i]/dmax*100):0}%"></i></div></div>`).join('')}</div>`:'<div class="empty">No spending in this period.</div>';
   const bigHtml=big.length?`<div class="ana-list">${big.map(t=>`<div class="ana-row"><span>${esc(t.category)}<small>${t.date}${t.note?' · '+esc(t.note):''}</small></span><b class="num neg">−${fmt(t.amountCents)}</b></div>`).join('')}</div>`:'<div class="empty">No spending in this period.</div>';
@@ -4328,6 +4374,7 @@ function renderAnalysis(){
    </div>`:'<div class="empty">No spending in this period.</div>';
   host.innerHTML=head+tiles+`
    <section class="card"><div class="ov-head"><h2>What this tells you</h2></div>${ins.length?`<ul class="ana-ins">${ins.map(([c,i,t])=>`<li class="i-${c}">${mi(i)}<span>${t}</span></li>`).join('')}</ul>`:'<div class="empty">Not enough activity in this period for insights.</div>'}</section>
+   <section class="card"><div class="ov-head"><h2>Money in and out by type</h2><span class="muted" style="font-size:12.5px">Only real income and everyday spending count in the numbers above</span></div>${flowHtml}</section>
    <section class="card"><div class="ov-head"><h2>Spending habits</h2><span class="muted" style="font-size:12.5px">${esc(r.label)}</span></div>${habHtml}</section>
    <div class="ov-grid2">
     <section class="card"><div class="ov-head"><h2>Where your money went</h2><span class="muted" style="font-size:12.5px">${fmt(A.spent)}</span></div>${catHtml}</section>
@@ -4336,17 +4383,16 @@ function renderAnalysis(){
    <section class="card"><div class="ov-head"><h2>Month by month</h2><span class="muted" style="font-size:12.5px">Last ${nM} months${avgM?' · avg spend '+fmt(avgM):''}</span></div>${bars.some(b=>b.a||b.b)?`<div class="chart-wrap">${barChart(bars)}</div>`:'<div class="empty">No activity in these months.</div>'}</section>
    <div class="ov-grid2">
     <section class="card"><div class="ov-head"><h2>Fixed vs day-to-day</h2></div>${splitHtml}</section>
-    <section class="card"><div class="ov-head"><h2>Where your money came from</h2><span class="muted" style="font-size:12.5px">${fmt(A.earned)}</span></div>${srcHtml}</section>
+    <section class="card"><div class="ov-head"><h2>Where your money came from</h2><span class="muted" style="font-size:12.5px">${fmt(A.allIn)}</span></div>${srcHtml}</section>
    </div>
    <div class="ov-grid2">
     <section class="card"><div class="ov-head"><h2>Biggest expenses</h2></div>${bigHtml}</section>
     <section class="card"><div class="ov-head"><h2>Spending by day of week</h2></div>${dowHtml}</section>
    </div>
-   <p class="muted" style="font-size:12px;margin:0">Transfers are left out because they move money rather than spend it. Flip purchases, debt settlements and target spending are grouped so you can see them apart from everyday costs.</p>`;
+   <p class="muted" style="font-size:12px;margin:0">Each transaction is sorted into a standard category from its name and note; your own names stay unchanged in the ledger. Borrowed money and debts repaid to you are not counted as income. Debt repayments, savings, home improvements and flip stock are not counted as spending. Transfers are left out.</p>`;
 }
 document.addEventListener('click',e=>{
   const p=e.target.closest('[data-anap]');if(p){ls.set('cc.ana.period',p.dataset.anap);renderAnalysis();return}
-  const c=e.target.closest('[data-anacat]');if(c){go('money','ledger');const i=document.getElementById('ledgerSearch');if(i)i.value=c.dataset.anacat;window.__ledgerQuery=c.dataset.anacat;window.__ledgerLimit=40;Store.set({ui:{...Store.get().ui,ledgerPeriod:'all',ledgerFilter:'expense'}});Render.ledger()}
 });
 
 window.CC={go,refresh(){badges();if(cur.page==='overview')renderOverview();if(cur.page==='money'&&cur.sub==='analysis')renderAnalysis()},badges};
