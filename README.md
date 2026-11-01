@@ -6,6 +6,7 @@ A single-file personal command center in a purple liquid-glass (iOS 26 inspired)
 | --- | --- |
 | **Overview** | Balance, income/expenses, debts, target progress, charts, recent activity, priorities, quick actions |
 | **Money** | Balance hero with period switch, a day-grouped transaction timeline, add/edit in a glass sheet (income, expense, transfers, repeat), spending breakdown, recurring list, Shein affiliate earnings, and an **Analysis** tab (savings rate, category changes vs the previous period, spending habits, fixed vs day-to-day, biggest expenses, day-of-week and month-by-month trends) |
+| **Rounds** | Savings clubs (ROSCA, "round" / "club"): monthly contributions, payout order, your turn, paid/missed months, what the club holds of yours or what you still owe after your payout. Paying and receiving add ledger rows (`Round: …` / `Round payout: …`) |
 | **Debts** | Owed to you / you owe, partial settlement, overdue tracking |
 | **Flips** | Inventory, purchases, sales, realized vs projected profit |
 | **Targets** | Flexible goals; allocate money as a planning earmark |

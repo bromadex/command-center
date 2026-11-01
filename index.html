@@ -437,6 +437,25 @@ tbody tr:last-child td{border-bottom:0}
 .mny-empty .material-symbols-outlined{font-size:38px;color:var(--cc-lav)}.mny-empty b{color:var(--cc-ink);font-size:17px}
 .mny-side{display:grid;gap:18px;align-self:start;position:sticky;top:92px}
 .mny-card{padding:20px;border-radius:var(--r-xl)}
+/* Rounds (ROSCA / club) */
+.rnd{display:grid;gap:18px}
+.rnd-card{display:grid;gap:16px}
+.rnd-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.rnd-head h2{font-size:20px;margin:0}.rnd-head small{display:block;color:var(--cc-ink-2);font-size:13px;margin-top:3px}
+.rnd-acts{display:flex;gap:8px;flex-wrap:wrap}
+.rnd-sched{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.rnd-cell{border:1px solid var(--cc-line);border-radius:14px;padding:10px 12px;display:grid;gap:4px;font-size:13px;background:rgba(255,255,255,.03)}
+.rnd-cell.me{border-color:var(--cc-lav);background:rgba(169,112,255,.16)}
+.rnd-cell.now{box-shadow:0 0 0 2px rgba(246,185,107,.6)}
+.rnd-cell b{font-size:13.5px}.rnd-cell .who{color:var(--cc-ink-2)}
+.rnd-cell button{justify-self:start;margin-top:2px}
+.rnd-chip{font-size:11.5px;padding:2px 8px;border-radius:99px;justify-self:start;background:rgba(255,255,255,.1)}
+.rnd-chip.paid{background:rgba(127,227,180,.18);color:var(--cc-good)}.rnd-chip.due{background:rgba(246,185,107,.2);color:var(--cc-warn)}.rnd-chip.miss{background:rgba(255,142,142,.18);color:var(--cc-bad)}
+.rnd-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.rnd-form label{display:grid;gap:5px;font-size:13px;color:var(--cc-ink-2)}
+.rnd-form .wide{grid-column:1/-1}
+@media (max-width:760px){.rnd-form{grid-template-columns:1fr 1fr}}
+@media (max-width:460px){.rnd-form{grid-template-columns:1fr}.rnd-sched{grid-template-columns:1fr 1fr}}
 /* Money → Analysis */
 .ana{display:grid;gap:18px}
 .ana-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
@@ -739,6 +758,10 @@ tbody tr:last-child td{border-bottom:0}
       </form>
     </div>
     <div class="card" style="margin-top:16px" id="sheinCard"></div>
+  </section>
+
+  <section id="view-rounds" hidden>
+    <div class="rnd" id="roundsHost"></div>
   </section>
 
   <section id="view-analysis" hidden>
@@ -1270,6 +1293,7 @@ const Store = (() => {
     budgets: [],
     flips: [],
     sheinEarnings: [],
+    rounds: [],
     ui: { tab: 'ledger', ledgerFilter: 'all', budgetMonth: Utils.monthKey(Utils.todayISO()), showSettled: false, forecastDays: 30, ledgerPeriod: 'month' }
   };
   
@@ -1528,8 +1552,8 @@ const Render = (() => {
   }
 
   // ---------- Money page: balance hero, grouped timeline, insights ----------
-  const catGroup = c => /^Flip: /.test(c) ? 'Flip purchases' : /^Debt Settlement/.test(c) ? 'Debt settlements' : /^Target: /.test(c) ? 'Target spending' : (c || 'Uncategorised');
-  const originOf = c => /^Flip: /.test(c) ? 'Flip' : /^Debt Settlement/.test(c) ? 'Debt' : /^Target: /.test(c) ? 'Target' : '';
+  const catGroup = c => /^Round: /.test(c) ? 'Round contributions' : /^Flip: /.test(c) ? 'Flip purchases' : /^Debt Settlement/.test(c) ? 'Debt settlements' : /^Target: /.test(c) ? 'Target spending' : (c || 'Uncategorised');
+  const originOf = c => /^Round( payout)?: /.test(c) ? 'Round' : /^Flip: /.test(c) ? 'Flip' : /^Debt Settlement/.test(c) ? 'Debt' : /^Target: /.test(c) ? 'Target' : '';
   const PERIODS = [['month', 'This month'], ['last', 'Last month'], ['3m', '3 months'], ['all', 'All time']];
   function periodRange(p) {
     const t = Utils.todayISO(), d = new Date(t + 'T00:00:00');
@@ -1793,7 +1817,7 @@ const Events = (() => {
   }
 
   // The shell (navigation) decides which view is visible; this just toggles the sections.
-  const VIEWS = ['ledger', 'analysis', 'people', 'flips', 'shein', 'settings'];
+  const VIEWS = ['ledger', 'analysis', 'people', 'rounds', 'flips', 'shein', 'settings'];
   function showTab(tab) {
     if (!VIEWS.includes(tab)) tab = 'ledger';   // e.g. a saved 'dashboard' or retired 'goal' tab
     VIEWS.forEach(v => { document.getElementById('view-' + v).hidden = (v !== tab); });
@@ -1852,7 +1876,7 @@ const Events = (() => {
     const catsFor = type => {
       const types = type === 'income' ? ['income'] : type === 'expense' ? ['expense'] : ['transfer_in', 'transfer_out'];
       const n = {};
-      Store.get().transactions.forEach(t => { if (types.includes(t.type) && t.category && !/^(Flip: |Debt Settlement|Target: )/.test(t.category)) n[t.category] = (n[t.category] || 0) + 1; });
+      Store.get().transactions.forEach(t => { if (types.includes(t.type) && t.category && !/^(Flip: |Debt Settlement|Target: |Round: |Round payout: )/.test(t.category)) n[t.category] = (n[t.category] || 0) + 1; });
       return Object.entries(n).sort((a, b) => b[1] - a[1]).map(x => x[0]);
     };
     function syncUI() {
@@ -2371,7 +2395,7 @@ const Events = (() => {
   const validateImport = (data) => {
     if (!data || typeof data !== 'object' || Array.isArray(data)) return 'The file is not a Command Center export (expected a JSON object).';
     if (!Array.isArray(data.transactions)) return 'No "transactions" list found. This does not look like a Command Center / Garage Fund export.';
-    for (const k of ['debts', 'budgets', 'flips', 'sheinEarnings']) if (data[k] !== undefined && !Array.isArray(data[k])) return `"${k}" should be a list but is not. The file may be corrupted.`;
+    for (const k of ['debts', 'budgets', 'flips', 'sheinEarnings', 'rounds']) if (data[k] !== undefined && !Array.isArray(data[k])) return `"${k}" should be a list but is not. The file may be corrupted.`;
     if (data.planner !== undefined) {
       if (typeof data.planner !== 'object' || data.planner === null) return '"planner" should be an object.';
       for (const k of ['targets', 'ideas', 'plan', 'books']) if (data.planner[k] !== undefined && !Array.isArray(data.planner[k])) return `"planner.${k}" should be a list but is not.`;
@@ -3969,6 +3993,7 @@ const SC_TABS=[['sc-dashboard','Study overview','dashboard'],['sc-pmp','PMP','mi
 const PAGES={
  overview:{label:'Overview',icon:'space_dashboard',el:'app-overview',sub:'Your money and progress at a glance'},
  money:{label:'Money',icon:'account_balance_wallet',el:'app-garage-fund',sub:'Everything coming in and going out',views:[['ledger','Transactions','receipt_long'],['analysis','Analysis','insights'],['shein','Shein affiliate','storefront']]},
+ rounds:{label:'Rounds',icon:'groups',el:'app-garage-fund',gf:'rounds',sub:'Your savings clubs: contributions and payouts'},
  debts:{label:'Debts',icon:'handshake',el:'app-garage-fund',gf:'people',sub:'Money owed to you and money you owe'},
  flips:{label:'Flips',icon:'inventory_2',el:'app-garage-fund',gf:'flips',sub:'Buy, receive, sell and measure profit'},
  targets:{label:'Targets',icon:'flag',el:'app-planner',pv:'targets',sub:'Decide where your money goes'},
@@ -3978,9 +4003,9 @@ const PAGES={
  calculator:{label:'Calculator',icon:'calculate',el:'app-calculator',sub:'Quick arithmetic with history'},
  settings:{label:'Settings',icon:'settings',el:'app-garage-fund',gf:'settings',sub:'Backup, restore and data safety'}
 };
-const GROUPS=[['',['overview']],['Finance',['money','debts','flips','targets']],['Growth',['ideas','study','books']],['Tools',['calculator']]];
+const GROUPS=[['',['overview']],['Finance',['money','rounds','debts','flips','targets']],['Growth',['ideas','study','books']],['Tools',['calculator']]];
 const PRIMARY=['overview','money','targets','study'];
-const MORE=['debts','flips','ideas','books','calculator','settings'];
+const MORE=['rounds','debts','flips','ideas','books','calculator','settings'];
 const EL_IDS=['app-overview','app-garage-fund','app-planner','app-study-center','app-calculator'];
 let cur={page:'overview',sub:''};
 
@@ -4010,6 +4035,7 @@ function go(page,sub,opts){
   }
   if(page==='overview')renderOverview();
   if(page==='money'&&sub==='analysis')renderAnalysis();
+  if(page==='rounds')renderRounds();
   // titles + subnav
   let title=P.label,subt=P.sub;
   if(page==='study'&&sub==='plan'){subt=Planner.head('study')[1]}
@@ -4097,6 +4123,7 @@ function badges(){
     const due=s.transactions.filter(x=>x.recurring&&x.nextDueDate&&x.nextDueDate<=t).length;
     const set=(id,n)=>document.querySelectorAll(`[data-badge="${id}"]`).forEach(b=>{b.hidden=!n;b.textContent=n});
     set('debts',od);set('money',due);
+    set('rounds',(s.rounds||[]).filter(r=>{const c=rndCur(r);return c>=0&&c<r.members&&!rndPaid(s,r,c)}).length);
   }catch(e){}
 }
 
@@ -4170,6 +4197,7 @@ function renderOverview(){
   // priorities
   const pr=[];
   s.debts.filter(d=>d.remainingAmountCents>0&&d.dueDate&&d.dueDate<today).forEach(d=>pr.push({cls:'bad',icon:'warning',t:(d.dir==='owed'?d.person+' owes you ':'You owe '+d.person+' ')+fmt(d.remainingAmountCents),s:'Overdue since '+d.dueDate,go:()=>go('debts')}));
+  (s.rounds||[]).forEach(r=>{const c=rndCur(r);if(c>=0&&c<r.members&&!rndPaid(s,r,c))pr.push({cls:'warn',icon:'groups',t:'Pay '+fmt(r.amountCents)+' to '+r.name,s:rndMonthLabel(r,c)+' contribution is due',go:()=>go('rounds')});if(!rndPayout(s,r)&&c>=r.myTurn-1&&c<r.members+1)pr.push({cls:'info',icon:'savings',t:'Your '+r.name+' payout is '+(c===r.myTurn-1?'this month':'due'),s:fmt(r.amountCents*r.members)+' · mark it received when it arrives',go:()=>go('rounds')})});
   if(due)pr.push({cls:'warn',icon:'autorenew',t:due+' recurring transaction'+(due>1?'s':'')+' due',s:'Process them to keep the ledger current',go:()=>{go('money','ledger')}});
   active.filter(t=>t.deadline&&t.left!==null&&t.left>=0&&t.left<=30&&!t.reached).forEach(t=>pr.push({cls:t.pct<50?'bad':'warn',icon:'flag',t:t.name+' is due in '+t.left+' day'+(t.left===1?'':'s'),s:(t.has?Math.round(t.pct)+'% funded':'No amount set')+(t.pct<50&&t.has?' · low progress':''),go:()=>{go('targets');Planner.openTarget(t.id)}}));
   active.filter(t=>t.late).forEach(t=>pr.push({cls:'bad',icon:'flag',t:t.name+' is past its deadline',s:Math.abs(t.left)+' days overdue',go:()=>{go('targets');Planner.openTarget(t.id)}}));
@@ -4215,6 +4243,88 @@ function renderOverview(){
   const rc=$('#ovRecurring');if(rc)rc.addEventListener('click',()=>CC_GF.processRecurring());
 }
 
+/* ---------- Rounds (ROSCA, "round" / "club"): everyone pays the same amount each month,
+   one member takes the whole pot each month in turn. Contributions and the payout are
+   real ledger transactions ("Round: <name>" / "Round payout: <name>"), so the balance
+   stays true. Paid status is read from the ledger, so deleting a row there undoes it. */
+const rndAdd=(ym,i)=>{const[y,m]=ym.split('-').map(Number);const d=new Date(y,m-1+i,1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')};
+const rndMonth=(r,i)=>rndAdd(r.startMonth,i);
+const rndMonthLabel=(r,i)=>Utils.monthLabel(rndMonth(r,i));
+function rndCur(r){const t=Utils.todayISO().slice(0,7),[y0,m0]=r.startMonth.split('-').map(Number),[y,m]=t.split('-').map(Number);return (y-y0)*12+(m-m0)}
+const rndTx=(s,r)=>s.transactions.filter(t=>t.roundId===r.id);
+const rndPaid=(s,r,i)=>rndTx(s,r).find(t=>t.type==='expense'&&t.roundCycle===i);
+const rndPayout=(s,r)=>rndTx(s,r).find(t=>t.type==='income');
+const rndWho=(r,i)=>i===r.myTurn-1?'You':((r.names||[])[i]||'Member '+(i+1));
+let rndEditing=null;
+function rndForm(r){
+  const v=r||{name:'',amountCents:50000,startMonth:Utils.todayISO().slice(0,7),members:10,myTurn:1,names:[],note:''};
+  return `<section class="card"><div class="ov-head"><h2>${r?'Edit '+esc(r.name):'Start a new round'}</h2>${r?'<button class="ov-link" data-rnd-cancel>Cancel</button>':''}</div>
+   <form id="roundForm" class="rnd-form" data-id="${r?r.id:''}">
+    <label>Name<input name="name" required placeholder="e.g. Work club" value="${esc(v.name)}"></label>
+    <label>Amount each month<input name="amount" type="number" step="0.01" min="0.01" required value="${Utils.fromCents(v.amountCents)}"></label>
+    <label>First month<input name="start" type="month" required value="${v.startMonth}"></label>
+    <label>Number of members<input name="members" type="number" min="2" max="60" required value="${v.members}"></label>
+    <label>Your turn to receive (1 = first month)<input name="turn" type="number" min="1" max="60" required value="${v.myTurn}"></label>
+    <label>Note<input name="note" placeholder="Optional" value="${esc(v.note||'')}"></label>
+    <label class="wide">Members in payout order (optional, comma separated, include yourself)<input name="names" placeholder="e.g. Tendai, Rudo, Me, Farai" value="${esc((v.names||[]).join(', '))}"></label>
+    <div class="wide"><button class="btn primary" type="submit">${r?'Save changes':'Create round'}</button> <span class="muted" style="font-size:12.5px">Pot each month = amount × members. Paying or receiving here adds the transaction to your ledger.</span></div>
+   </form></section>`;
+}
+function renderRounds(){
+  const host=document.getElementById('roundsHost');if(!host)return;
+  const s=Store.get(),rounds=s.rounds||[],today=Utils.todayISO();
+  const cards=rounds.map(r=>{
+    const n=r.members,pot=r.amountCents*n,c=rndCur(r),tx=rndTx(s,r);
+    const paidTx=tx.filter(t=>t.type==='expense'),paid=paidTx.reduce((a,t)=>a+t.amountCents,0),po=rndPayout(s,r),got=po?po.amountCents:0;
+    const left=Math.max(0,n-paidTx.length)*r.amountCents,pos=paid-got;
+    const myM=rndMonthLabel(r,r.myTurn-1),until=r.myTurn-1-c;
+    const done=c>=n&&paidTx.length>=n&&po;
+    const curDue=c>=0&&c<n&&!rndPaid(s,r,c);
+    const payoutDue=!po&&c>=r.myTurn-1;
+    const status=done?'Finished':c<0?'Starts '+rndMonthLabel(r,0):c>=n?'All months passed':'Month '+(c+1)+' of '+n;
+    const posTxt=pos>0?`<div class="v pos">${fmt(pos)}</div><small>The club holds this much of yours</small>`:pos<0?`<div class="v neg">${fmt(-pos)}</div><small>You still owe the club this (credit)</small>`:`<div class="v">${fmt(0)}</div><small>Even with the club</small>`;
+    const cells=[...Array(n)].map((_,i)=>{const p=rndPaid(s,r,i),me=i===r.myTurn-1;
+      const chip=p?`<span class="rnd-chip paid">Paid ${p.date.slice(5)}</span>`:i<c?`<span class="rnd-chip miss">Not paid</span>`:i===c?`<span class="rnd-chip due">Due now</span>`:`<span class="rnd-chip">Upcoming</span>`;
+      return `<div class="rnd-cell ${me?'me':''} ${i===c?'now':''}"><b>${rndMonthLabel(r,i)}</b><span class="who">${mi(me?'star':'person')} ${esc(rndWho(r,i))} receive${rndWho(r,i)==='You'?'':'s'} ${fmt(pot)}</span>${chip}${p?`<button class="btn ghost small" data-rnd-unpay="${r.id}" data-i="${i}">Undo</button>`:i<=c+1?`<button class="btn small" data-rnd-pay="${r.id}" data-i="${i}">Pay ${fmt(r.amountCents)}</button>`:''}</div>`}).join('');
+    return `<section class="card rnd-card">
+     <div class="rnd-head"><div><h2>${esc(r.name)}</h2><small>${fmt(r.amountCents)} a month · ${n} members · pot ${fmt(pot)} · ${status}${r.note?' · '+esc(r.note):''}</small></div>
+      <div class="rnd-acts">${curDue?`<button class="btn primary" data-rnd-pay="${r.id}" data-i="${c}">${mi('payments')}Pay ${rndMonthLabel(r,c).split(' ')[0]}'s ${fmt(r.amountCents)}</button>`:''}${payoutDue?`<button class="btn primary" data-rnd-payout="${r.id}">${mi('savings')}I received my ${fmt(pot)}</button>`:''}${po?`<button class="btn ghost small" data-rnd-unpayout="${r.id}">Undo payout</button>`:''}<button class="btn ghost small" data-rnd-edit="${r.id}">Edit</button><button class="btn ghost small" data-rnd-del="${r.id}">Delete</button></div></div>
+     <div class="ana-tiles">
+      <div class="stat"><div class="k">Paid in</div><div class="v">${fmt(paid)}</div><small>${paidTx.length} of ${n} months</small></div>
+      <div class="stat"><div class="k">Still to pay</div><div class="v">${fmt(left)}</div><small>${Math.max(0,n-paidTx.length)} month${n-paidTx.length===1?'':'s'} left</small></div>
+      <div class="stat"><div class="k">Your payout</div><div class="v ${po?'pos':''}">${fmt(pot)}</div><small>${po?'Received '+po.date:until>0?myM+' · in '+until+' month'+(until===1?'':'s'):until===0?myM+' · this month':myM+' · not marked received'}</small></div>
+      <div class="stat"><div class="k">Your position</div>${posTxt}</div>
+      <div class="stat"><div class="k">Progress</div><div class="v">${Math.max(0,Math.min(n,c+1))} / ${n}</div><div class="cc-bar" style="margin-top:8px"><i style="width:${Math.max(0,Math.min(100,(c+1)/n*100))}%"></i></div></div>
+     </div>
+     <div class="muted" style="font-size:13px">${until>0?`Until your turn you are saving: by ${myM} you will have paid in ${fmt(r.amountCents*r.myTurn)} and receive ${fmt(pot)}, so ${fmt(pot-r.amountCents*r.myTurn)} of your payout is effectively credit from the group that you repay over the remaining ${n-r.myTurn} month${n-r.myTurn===1?'':'s'}.`:'Everyone pays every month, including the month they receive. You pay in '+fmt(pot)+' in total and get '+fmt(pot)+' back once.'}</div>
+     <div class="rnd-sched">${cells}</div>
+    </section>`}).join('');
+  host.innerHTML=(rounds.length?'':`<div class="glass empty mny-empty"><span class="material-symbols-outlined">groups</span><b>No rounds yet</b><span>A round (club / ROSCA): everyone pays the same amount each month and one member takes the whole pot in turn. Add yours below.</span></div>`)+cards+rndForm(rndEditing?rounds.find(r=>r.id===rndEditing):null);
+}
+function rndSaveRounds(rounds){Store.set({rounds});Render.all();renderRounds()}
+document.addEventListener('submit',e=>{
+  if(e.target.id!=='roundForm')return;e.preventDefault();const f=e.target,id=f.dataset.id;
+  const members=Math.max(2,parseInt(f.members.value)||2),turn=Math.min(members,Math.max(1,parseInt(f.turn.value)||1));
+  const names=f.names.value.split(',').map(x=>x.trim()).filter(Boolean).slice(0,members);
+  const data={name:f.name.value.trim()||'Round',amountCents:Utils.toCents(f.amount.value),startMonth:f.start.value,members,myTurn:turn,names,note:f.note.value.trim()};
+  if(!data.amountCents||!/^\d{4}-\d{2}$/.test(data.startMonth))return alert('Enter an amount and a first month.');
+  const rounds=[...(Store.get().rounds||[])];
+  if(id){const i=rounds.findIndex(r=>r.id===id);rounds[i]={...rounds[i],...data}}else rounds.push({id:Utils.uid(),...data,created:Utils.todayISO()});
+  rndEditing=null;rndSaveRounds(rounds);
+});
+document.addEventListener('click',e=>{
+  const B=a=>e.target.closest('['+a+']');let b;const s=Store.get(),R=id=>(s.rounds||[]).find(r=>r.id===id);
+  if(b=B('data-rnd-pay')){const r=R(b.getAttribute('data-rnd-pay')),i=+b.dataset.i;if(!r||rndPaid(s,r,i))return;
+    Store.add('transactions',{id:Utils.uid(),type:'expense',date:Utils.todayISO(),category:'Round: '+r.name,amountCents:r.amountCents,note:'Contribution for '+rndMonthLabel(r,i),recurring:'',nextDueDate:null,roundId:r.id,roundCycle:i});Render.all();renderRounds();return}
+  if(b=B('data-rnd-unpay')){const r=R(b.getAttribute('data-rnd-unpay')),t=r&&rndPaid(s,r,+b.dataset.i);if(t&&confirm('Remove this contribution from your ledger?')){Store.remove('transactions',t.id);Render.all();renderRounds()}return}
+  if(b=B('data-rnd-payout')){const r=R(b.getAttribute('data-rnd-payout'));if(!r||rndPayout(s,r))return;const amt=prompt('Amount you received (normally '+fmt(r.amountCents*r.members)+'):',Utils.fromCents(r.amountCents*r.members));if(amt===null)return;const c=Utils.toCents(amt);if(!c)return;
+    Store.add('transactions',{id:Utils.uid(),type:'income',date:Utils.todayISO(),category:'Round payout: '+r.name,amountCents:c,note:'My turn ('+rndMonthLabel(r,r.myTurn-1)+')',recurring:'',nextDueDate:null,roundId:r.id});Render.all();renderRounds();return}
+  if(b=B('data-rnd-unpayout')){const r=R(b.getAttribute('data-rnd-unpayout')),t=r&&rndPayout(s,r);if(t&&confirm('Remove the payout from your ledger?')){Store.remove('transactions',t.id);Render.all();renderRounds()}return}
+  if(b=B('data-rnd-edit')){rndEditing=b.getAttribute('data-rnd-edit');renderRounds();document.getElementById('roundForm').scrollIntoView({behavior:'smooth',block:'center'});return}
+  if(B('data-rnd-cancel')){rndEditing=null;renderRounds();return}
+  if(b=B('data-rnd-del')){const id=b.getAttribute('data-rnd-del');if(confirm('Delete this round? Its contributions and payout stay in your ledger.'))rndSaveRounds((s.rounds||[]).filter(r=>r.id!==id));return}
+});
+
 /* ---------- Money → Analysis: how the money is being used ---------- */
 const ANA_P=[['month','This month'],['last','Last month'],['3m','3 months'],['6m','6 months'],['12m','12 months'],['all','All time']];
 const isoOf=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -4224,6 +4334,7 @@ const isoOf=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+St
          living = everyday spending · people = lent or given to people
          debt = paying back what you owe · invest = savings, property, home · business = flip stock and costs */
 const CAT_IN=[
+ [/^round payout: /i,'Round payout','roundin'],
  [/^salary|wage|payslip/i,'Salary','earned'],
  [/^flip sale/i,'Flip sales','earned'],
  [/shein|affiliate/i,'Shein affiliate','earned'],
@@ -4231,6 +4342,7 @@ const CAT_IN=[
  [/^debt settlement|repaid|paid back/i,'Debts repaid to you','repaid'],
  [/borrow|loan/i,'Borrowed money','borrowed']];
 const CAT_OUT=[
+ [/^round: /i,'Round contributions','roundout'],
  [/^debt settlement|\|\s*debt\b/i,'Debt repayments','debt'],
  [/^target: /i,'Savings & property','invest'],
  [/^flip: |mascots?\)|incubator|stock/i,'Flip stock & costs','business'],
@@ -4329,12 +4441,13 @@ function renderAnalysis(){
   const perWeek=nBuy?(nBuy/days*7):0;
   const F=k=>A.flow[k]||0;
   const flowRow=(l,v,cls,sub)=>v?`<div class="ana-row"><span>${l}<small>${sub}</small></span><b class="num ${cls}">${fmt(v)}</b></div>`:'';
-  const flowHtml=`<div class="ov-grid2"><div><div class="k muted" style="font-size:12.5px;margin-bottom:4px">Money in · ${fmt(A.allIn)}</div><div class="ana-list">${flowRow('Earned income',F('earned'),'pos','Salary, sales, deals, affiliate')+flowRow('Debts repaid to you',F('repaid'),'','Your money coming back')+flowRow('Borrowed',F('borrowed'),'neg','Must be paid back')||'<div class="empty">Nothing came in.</div>'}</div></div>
-    <div><div class="k muted" style="font-size:12.5px;margin-bottom:4px">Money out · ${fmt(A.allOut)}</div><div class="ana-list">${flowRow('Everyday spending',F('living'),'neg','Living costs and habits')+flowRow('Lent or given to people',F('people'),'neg','Check what comes back')+flowRow('Debt repayments',F('debt'),'','Paying back what you owe')+flowRow('Savings, property & home',F('invest'),'pos','Building assets')+flowRow('Flip stock & costs',F('business'),'','Comes back as flip sales')||'<div class="empty">Nothing went out.</div>'}</div></div></div>`;
+  const flowHtml=`<div class="ov-grid2"><div><div class="k muted" style="font-size:12.5px;margin-bottom:4px">Money in · ${fmt(A.allIn)}</div><div class="ana-list">${flowRow('Earned income',F('earned'),'pos','Salary, sales, deals, affiliate')+flowRow('Debts repaid to you',F('repaid'),'','Your money coming back')+flowRow('Round payouts',F('roundin'),'','Your club pot: your own contributions plus credit from the group')+flowRow('Borrowed',F('borrowed'),'neg','Must be paid back')||'<div class="empty">Nothing came in.</div>'}</div></div>
+    <div><div class="k muted" style="font-size:12.5px;margin-bottom:4px">Money out · ${fmt(A.allOut)}</div><div class="ana-list">${flowRow('Everyday spending',F('living'),'neg','Living costs and habits')+flowRow('Lent or given to people',F('people'),'neg','Check what comes back')+flowRow('Round contributions',F('roundout'),'pos','Savings club, comes back as your payout')+flowRow('Debt repayments',F('debt'),'','Paying back what you owe')+flowRow('Savings, property & home',F('invest'),'pos','Building assets')+flowRow('Flip stock & costs',F('business'),'','Comes back as flip sales')||'<div class="empty">Nothing went out.</div>'}</div></div></div>`;
   // plain-language insights
   const ins=[];
   if(F('borrowed'))ins.push(['bad','account_balance',`<b>${fmt(F('borrowed'))}</b> of the money that came in was borrowed. It is not income and has to be paid back.`]);
   if(F('repaid'))ins.push(['info','undo',`${fmt(F('repaid'))} was money people paid back to you. It is counted separately so it does not look like earnings.`]);
+  if(F('roundout'))ins.push(['good','groups',`You paid <b>${fmt(F('roundout'))}</b> into your round${F('roundin')?' and received a '+fmt(F('roundin'))+' payout':''}. Rounds are counted as savings, not spending.`]);
   if(F('invest'))ins.push(['good','home',`You put <b>${fmt(F('invest'))}</b> into savings, property and your home.`]);
   if(F('people')&&A.spent&&pct(F('people'),A.spent)>=10)ins.push(['warn','group',`${pct(F('people'),A.spent)}% of your spending (${fmt(F('people'))}) went to other people as loans or gifts.`]);
   if(A.cats['Betting'])ins.push(['bad','casino',`Betting cost you <b>${fmt(A.cats['Betting'])}</b> in this period.`]);
@@ -4395,7 +4508,7 @@ document.addEventListener('click',e=>{
   const p=e.target.closest('[data-anap]');if(p){ls.set('cc.ana.period',p.dataset.anap);renderAnalysis();return}
 });
 
-window.CC={go,refresh(){badges();if(cur.page==='overview')renderOverview();if(cur.page==='money'&&cur.sub==='analysis')renderAnalysis()},badges};
+window.CC={go,refresh(){badges();if(cur.page==='overview')renderOverview();if(cur.page==='money'&&cur.sub==='analysis')renderAnalysis();if(cur.page==='rounds')renderRounds()},badges};
 
 buildNav();
 setCollapsed(ls.get('cc.collapsed')==='1');
