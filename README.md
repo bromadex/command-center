@@ -5,7 +5,7 @@ A single-file personal command center in a purple liquid-glass (iOS 26 inspired)
 | Section | What it holds |
 | --- | --- |
 | **Overview** | Balance, income/expenses, debts, target progress, charts, recent activity, priorities, quick actions |
-| **Money** | Balance hero with period switch, a day-grouped transaction timeline, add/edit in a glass sheet (income, expense, transfers, repeat), spending breakdown, recurring list, Shein affiliate earnings |
+| **Money** | Balance hero with period switch, a day-grouped transaction timeline, add/edit in a glass sheet (income, expense, transfers, repeat), spending breakdown, recurring list, Shein affiliate earnings, and an **Analysis** tab (savings rate, category changes vs the previous period, spending habits, fixed vs day-to-day, biggest expenses, day-of-week and month-by-month trends) |
 | **Debts** | Owed to you / you owe, partial settlement, overdue tracking |
 | **Flips** | Inventory, purchases, sales, realized vs projected profit |
 | **Targets** | Flexible goals; allocate money as a planning earmark |
