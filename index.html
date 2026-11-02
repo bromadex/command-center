@@ -449,6 +449,7 @@ tbody tr:last-child td{border-bottom:0}
 .rnd-cell.now{box-shadow:0 0 0 2px rgba(246,185,107,.6)}
 .rnd-cell b{font-size:13.5px}.rnd-cell .who{color:var(--cc-ink-2)}
 .rnd-cell .rnd-acts{gap:6px;margin-top:2px}
+.rnd-form textarea{width:100%;font:inherit;color:inherit;background:rgba(255,255,255,.06);border:1px solid var(--cc-line);border-radius:12px;padding:10px 12px;resize:vertical}
 .rnd-chip{font-size:11.5px;padding:2px 8px;border-radius:99px;justify-self:start;background:rgba(255,255,255,.1)}
 .rnd-chip.paid{background:rgba(127,227,180,.18);color:var(--cc-good)}.rnd-chip.due{background:rgba(246,185,107,.2);color:var(--cc-warn)}.rnd-chip.miss{background:rgba(255,142,142,.18);color:var(--cc-bad)}
 .rnd-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
@@ -4216,7 +4217,7 @@ function renderOverview(){
   // priorities
   const pr=[];
   s.debts.filter(d=>d.remainingAmountCents>0&&d.dueDate&&d.dueDate<today).forEach(d=>pr.push({cls:'bad',icon:'warning',t:(d.dir==='owed'?d.person+' owes you ':'You owe '+d.person+' ')+fmt(d.remainingAmountCents),s:'Overdue since '+d.dueDate,go:()=>go('debts')}));
-  (s.rounds||[]).forEach(r=>{const c=rndCur(r);if(rndDue(s,r,c))pr.push({cls:'warn',icon:'groups',t:'Pay '+fmt(r.amountCents)+' to '+r.name,s:rndMonthLabel(r,c)+' contribution is due',go:()=>go('rounds')});if(!rndPayout(s,r)&&c>=r.myTurn-1&&c<r.members+1)pr.push({cls:'info',icon:'savings',t:'Your '+r.name+' payout is '+(c===r.myTurn-1?'this month':'due'),s:fmt(rndPot(r))+' · mark it received when it arrives',go:()=>go('rounds')})});
+  (s.rounds||[]).forEach(r=>{const c=rndCur(r);if(rndDue(s,r,c))pr.push({cls:'warn',icon:'groups',t:'Pay '+fmt(r.amountCents)+' to '+r.name,s:rndMonthLabel(r,c)+' contribution is due by '+rndEndLabel(r,c),go:()=>go('rounds')});const pd=rndPayoutDue(s,r);if(pd!=null)pr.push({cls:'info',icon:'savings',t:'Your '+r.name+' payout ('+rndMonthLabel(r,pd)+')',s:fmt(rndPot(r))+' at month end · mark it received when it arrives',go:()=>go('rounds')})});
   if(due)pr.push({cls:'warn',icon:'autorenew',t:due+' recurring transaction'+(due>1?'s':'')+' due',s:'Process them to keep the ledger current',go:()=>{go('money','ledger')}});
   active.filter(t=>t.deadline&&t.left!==null&&t.left>=0&&t.left<=30&&!t.reached).forEach(t=>pr.push({cls:t.pct<50?'bad':'warn',icon:'flag',t:t.name+' is due in '+t.left+' day'+(t.left===1?'':'s'),s:(t.has?Math.round(t.pct)+'% funded':'No amount set')+(t.pct<50&&t.has?' · low progress':''),go:()=>{go('targets');Planner.openTarget(t.id)}}));
   active.filter(t=>t.late).forEach(t=>pr.push({cls:'bad',icon:'flag',t:t.name+' is past its deadline',s:Math.abs(t.left)+' days overdue',go:()=>{go('targets');Planner.openTarget(t.id)}}));
@@ -4269,57 +4270,70 @@ function renderOverview(){
 const rndAdd=(ym,i)=>{const[y,m]=ym.split('-').map(Number);const d=new Date(y,m-1+i,1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')};
 const rndMonth=(r,i)=>rndAdd(r.startMonth,i);
 const rndMonthLabel=(r,i)=>Utils.monthLabel(rndMonth(r,i));
+const rndShort=(r,i)=>new Date(rndMonth(r,i)+'-01T00:00:00').toLocaleDateString(undefined,{month:'short',year:'numeric'});
 function rndCur(r){const t=Utils.todayISO().slice(0,7),[y0,m0]=r.startMonth.split('-').map(Number),[y,m]=t.split('-').map(Number);return (y-y0)*12+(m-m0)}
+const rndN=r=>r.months||r.members;                                   // number of months in the round
+const rndMine=r=>Array.isArray(r.myTurns)?r.myTurns:[(r.myTurn||1)-1]; // month indexes when you receive
+const rndIsMine=(r,i)=>rndMine(r).includes(i);
 const rndTx=(s,r)=>s.transactions.filter(t=>t.roundId===r.id);
 const rndPaid=(s,r,i)=>rndTx(s,r).find(t=>t.type==='expense'&&t.roundCycle===i);
-const rndPayout=(s,r)=>rndTx(s,r).find(t=>t.type==='income');
+const rndPayouts=(s,r)=>rndTx(s,r).filter(t=>t.type==='income');
+const rndPayoutAt=(s,r,i)=>rndPayouts(s,r).find(t=>t.roundCycle===i||(t.roundCycle==null&&i===rndMine(r)[0]));
 const rndSkip=r=>!!r.skipSelf;
 const rndPot=r=>r.amountCents*(r.members-(rndSkip(r)?1:0));
-const rndMustPay=(r,i)=>!(rndSkip(r)&&i===r.myTurn-1);
-const rndDue=(s,r,i)=>i>=0&&i<r.members&&rndMustPay(r,i)&&!rndPaid(s,r,i);
-const rndWho=(r,i)=>i===r.myTurn-1?'You':(((r.names||[])[i]||'').trim()||'Member '+(i+1));
+const rndMustPay=(r,i)=>!(rndSkip(r)&&rndIsMine(r,i));
+const rndDue=(s,r,i)=>i>=0&&i<rndN(r)&&rndMustPay(r,i)&&!rndPaid(s,r,i);
+const rndPayoutDue=(s,r)=>rndMine(r).find(i=>i<=rndCur(r)&&i<rndN(r)&&!rndPayoutAt(s,r,i));
+const rndWho=(r,i)=>rndIsMine(r,i)?'You':(((r.names||[])[i]||'').trim()||'Member '+(i+1));
 let rndEditing=null,rndFormOpen=false,rndPastOpen=false;
 document.addEventListener('toggle',e=>{if(e.target.id==='rndPast')rndPastOpen=e.target.open},true);
 const rndEndISO=(r,i)=>{const[y,m]=rndMonth(r,i).split('-').map(Number);return isoOf(new Date(y,m,0))};
+const rndEndLabel=(r,i)=>new Date(rndEndISO(r,i)+'T00:00:00').toLocaleDateString(undefined,{day:'numeric',month:'short'});
 const rndDefaultDate=(r,i)=>{const t=Utils.todayISO(),e=rndEndISO(r,i);return e<t?e:t};
-const rndOver=(s,r)=>rndCur(r)>=r.members; // every month has passed
+const rndOver=(s,r)=>rndCur(r)>=rndN(r); // every month has passed
 function rndForm(r){
-  const v=r||{name:'',amountCents:50000,startMonth:Utils.todayISO().slice(0,7),members:6,myTurn:1,names:[],note:'',skipSelf:true};
+  const v=r||{name:'',amountCents:50000,startMonth:Utils.todayISO().slice(0,7),members:6,myTurn:1,names:[],note:'',skipSelf:true,myName:''};
+  const order=(v.names||[]).map((x,i)=>rndIsMine(v,i)?(v.myName||'Me'):x).filter((x,i)=>i<rndN(v)&&(x||'').trim());
   return `<form id="roundForm" class="rnd-form" data-id="${r?r.id:''}">
     <label>Name<input name="name" required placeholder="e.g. November club" value="${esc(v.name)}"></label>
-    <label>Amount each month<input name="amount" type="number" step="0.01" min="0.01" required value="${Utils.fromCents(v.amountCents)}"></label>
+    <label>Amount each person pays<input name="amount" type="number" step="0.01" min="0.01" required value="${Utils.fromCents(v.amountCents)}"></label>
     <label>First month<input name="start" type="month" required value="${v.startMonth}"></label>
     <label>Number of members<input name="members" type="number" min="2" max="60" required value="${v.members}"></label>
-    <label>Your turn to receive (1 = first month)<input name="turn" type="number" min="1" max="60" required value="${v.myTurn}"></label>
+    <label>Your name in the order<input name="me" placeholder="e.g. Clement" value="${esc(v.myName||'')}"></label>
     <label>Note<input name="note" placeholder="Optional" value="${esc(v.note||'')}"></label>
+    <label class="wide">Payout order: one name per month, in order (one per line or comma separated). A person can appear more than once.<textarea name="order" rows="6" placeholder="Prosper&#10;Clement&#10;Tonderai&#10;…">${esc(order.join('\n'))}</textarea></label>
+    <label>If you leave the order empty: your turn (1 = first month)<input name="turn" type="number" min="1" max="60" value="${rndMine(v)[0]+1}"></label>
     <label class="wide" style="display:flex;gap:10px;align-items:center;color:var(--cc-ink)"><input name="skip" type="checkbox" style="width:auto" ${v.skipSelf?'checked':''}> I don't pay in my own month (e.g. 6 members: I pay the other 5 and receive 5 × the amount)</label>
-    <label class="wide">Who receives each month, in order (optional, comma separated, include yourself). You can also set the name when you pay.<input name="names" placeholder="e.g. Tendai, Rudo, Me, Farai" value="${esc((v.names||[]).join(', '))}"></label>
-    <div class="wide"><button class="btn primary" type="submit">${r?'Save changes':'Create round'}</button> ${r||rndFormOpen?'<button class="btn ghost" type="button" data-rnd-cancel>Cancel</button>':''} <span class="muted" style="font-size:12.5px">Pot = amount × the members who pay that month. Paying or receiving here adds the transaction to your ledger.</span></div>
+    <div class="wide"><button class="btn primary" type="submit">${r?'Save changes':'Create round'}</button> ${r||rndFormOpen?'<button class="btn ghost" type="button" data-rnd-cancel>Cancel</button>':''} <span class="muted" style="font-size:12.5px">Payouts are on month ends. Paying or receiving here adds the transaction to your ledger.</span></div>
    </form>`;
 }
 function rndCard(s,r){
-    const n=r.members,pot=rndPot(r),c=rndCur(r),tx=rndTx(s,r),toPay=n-(rndSkip(r)?1:0);
-    const paidTx=tx.filter(t=>t.type==='expense'),paid=paidTx.reduce((a,t)=>a+t.amountCents,0),po=rndPayout(s,r),got=po?po.amountCents:0;
+    const n=rndN(r),pot=rndPot(r),c=rndCur(r),tx=rndTx(s,r),mine=rndMine(r).filter(i=>i<n);
+    const toPay=n-(rndSkip(r)?mine.length:0);
+    const paidTx=tx.filter(t=>t.type==='expense'),paid=paidTx.reduce((a,t)=>a+t.amountCents,0),pos_=rndPayouts(s,r),got=pos_.reduce((a,t)=>a+t.amountCents,0);
     const missing=[...Array(n)].map((_,i)=>i).filter(i=>i<=Math.min(c,n-1)&&rndDue(s,r,i));
     const left=Math.max(0,toPay-paidTx.length)*r.amountCents,pos=paid-got;
-    const myM=rndMonthLabel(r,r.myTurn-1),until=r.myTurn-1-c;
-    const curDue=rndDue(s,r,c),payoutDue=!po&&c>=r.myTurn-1;
+    const nextTurn=mine.find(i=>!rndPayoutAt(s,r,i)),until=nextTurn==null?null:nextTurn-c;
+    const curDue=rndDue(s,r,c),dueTurn=rndPayoutDue(s,r);
     const status=c<0?'Starts '+rndMonthLabel(r,0):c>=n?(missing.length?'Ended · '+missing.length+' month'+(missing.length===1?'':'s')+' not recorded':'Ended '+rndMonthLabel(r,n-1)):'Month '+(c+1)+' of '+n;
     const posTxt=pos>0?`<div class="v pos">${fmt(pos)}</div><small>The club holds this much of yours</small>`:pos<0?`<div class="v neg">${fmt(-pos)}</div><small>You still owe the club this (credit)</small>`:`<div class="v">${fmt(0)}</div><small>Even with the club</small>`;
-    const cells=[...Array(n)].map((_,i)=>{const p=rndPaid(s,r,i),me=i===r.myTurn-1,who=rndWho(r,i);
-      const free=!rndMustPay(r,i);const chip=p?`<span class="rnd-chip paid">Paid ${p.date}</span>`:free?`<span class="rnd-chip paid">Your month · you don't pay</span>`:i<c?`<span class="rnd-chip miss">Not recorded</span>`:i===c?`<span class="rnd-chip due">Due now</span>`:`<span class="rnd-chip">Upcoming</span>`;
-      return `<div class="rnd-cell ${me?'me':''} ${i===c?'now':''}"><b>${rndMonthLabel(r,i)}</b><span class="who">${mi(me?'star':'person')} ${esc(who)} receive${who==='You'?'':'s'} ${fmt(pot)}</span>${chip}<span class="rnd-acts">${free&&!p?'':p?`<button class="btn ghost small" data-rnd-pay="${r.id}" data-i="${i}">Edit</button><button class="btn ghost small" data-rnd-unpay="${r.id}" data-i="${i}">Undo</button>`:i<=c+1?`<button class="btn small" data-rnd-pay="${r.id}" data-i="${i}">Pay ${fmt(r.amountCents)}</button>`:`<button class="btn ghost small" data-rnd-name="${r.id}" data-i="${i}">Set name</button>`}</span></div>`}).join('');
+    const turnsTxt=mine.map(i=>{const p=rndPayoutAt(s,r,i);return rndShort(r,i)+(p?' ✓ received':i===c?' · this month':i>c?' · in '+(i-c)+' mo':' · not recorded')}).join('<br>');
+    const cells=[...Array(n)].map((_,i)=>{const p=rndPaid(s,r,i),me=rndIsMine(r,i),who=rndWho(r,i),free=!rndMustPay(r,i),po=me&&rndPayoutAt(s,r,i);
+      const chip=p?`<span class="rnd-chip paid">Paid ${p.date}</span>`:free?`<span class="rnd-chip paid">Your month · you don't pay</span>`:i<c?`<span class="rnd-chip miss">Not recorded</span>`:i===c?`<span class="rnd-chip due">Due by ${rndEndLabel(r,i)}</span>`:`<span class="rnd-chip">Upcoming</span>`;
+      const payBtns=free&&!p?'':p?`<button class="btn ghost small" data-rnd-pay="${r.id}" data-i="${i}">Edit</button><button class="btn ghost small" data-rnd-unpay="${r.id}" data-i="${i}">Undo</button>`:i<=c+1?`<button class="btn small" data-rnd-pay="${r.id}" data-i="${i}">Pay ${fmt(r.amountCents)}</button>`:me?'':`<button class="btn ghost small" data-rnd-name="${r.id}" data-i="${i}">Set name</button>`;
+      const poRow=me?(po?`<span class="rnd-chip paid">Received ${fmt(po.amountCents)} · ${po.date}</span><span class="rnd-acts"><button class="btn ghost small" data-rnd-payout="${r.id}" data-i="${i}">Edit payout</button><button class="btn ghost small" data-rnd-unpayout="${r.id}" data-i="${i}">Undo</button></span>`:i<=c?`<span class="rnd-acts"><button class="btn small primary" data-rnd-payout="${r.id}" data-i="${i}">I received ${fmt(pot)}</button></span>`:''):'';
+      return `<div class="rnd-cell ${me?'me':''} ${i===c?'now':''}"><b>${rndMonthLabel(r,i)}</b><span class="who">${mi(me?'star':'person')} ${esc(who)} receive${who==='You'?'':'s'} ${fmt(pot)} · ${rndEndLabel(r,i)}</span>${chip}<span class="rnd-acts">${payBtns}</span>${poRow}</div>`}).join('');
     return `<section class="card rnd-card">
-     <div class="rnd-head"><div><h2>${esc(r.name)}</h2><small>${fmt(r.amountCents)} a month · ${n} members · pot ${fmt(pot)} · ${status}${r.note?' · '+esc(r.note):''}</small></div>
-      <div class="rnd-acts">${curDue?`<button class="btn primary" data-rnd-pay="${r.id}" data-i="${c}">${mi('payments')}Pay ${rndMonthLabel(r,c).split(' ')[0]}'s ${fmt(r.amountCents)}</button>`:''}${payoutDue?`<button class="btn primary" data-rnd-payout="${r.id}">${mi('savings')}I received my ${fmt(pot)}</button>`:''}${po?`<button class="btn ghost small" data-rnd-payout="${r.id}">Edit payout</button><button class="btn ghost small" data-rnd-unpayout="${r.id}">Undo payout</button>`:''}<button class="btn ghost small" data-rnd-edit="${r.id}">Edit round</button><button class="btn ghost small" data-rnd-del="${r.id}">Delete</button></div></div>
+     <div class="rnd-head"><div><h2>${esc(r.name)}</h2><small>${fmt(r.amountCents)} each · ${r.members} members · ${n} months · pot ${fmt(pot)} paid out at month end · ${status}${r.note?' · '+esc(r.note):''}</small></div>
+      <div class="rnd-acts">${curDue?`<button class="btn primary" data-rnd-pay="${r.id}" data-i="${c}">${mi('payments')}Pay ${rndMonthLabel(r,c).split(' ')[0]}'s ${fmt(r.amountCents)}</button>`:''}${dueTurn!=null?`<button class="btn primary" data-rnd-payout="${r.id}" data-i="${dueTurn}">${mi('savings')}I received my ${fmt(pot)} (${rndShort(r,dueTurn)})</button>`:''}<button class="btn ghost small" data-rnd-edit="${r.id}">Edit round</button><button class="btn ghost small" data-rnd-del="${r.id}">Delete</button></div></div>
      <div class="ana-tiles">
-      <div class="stat"><div class="k">Paid in</div><div class="v">${fmt(paid)}</div><small>${paidTx.length} of ${toPay} months</small></div>
-      <div class="stat"><div class="k">Still to pay</div><div class="v">${fmt(left)}</div><small>${Math.max(0,toPay-paidTx.length)} month${toPay-paidTx.length===1?'':'s'} left</small></div>
-      <div class="stat"><div class="k">Your payout</div><div class="v ${po?'pos':''}">${fmt(po?got:pot)}</div><small>${po?'Received '+po.date:until>0?myM+' · in '+until+' month'+(until===1?'':'s'):until===0?myM+' · this month':myM+' · not marked received'}</small></div>
+      <div class="stat"><div class="k">Paid in</div><div class="v">${fmt(paid)}</div><small>${paidTx.length} of ${toPay} payments</small></div>
+      <div class="stat"><div class="k">Still to pay</div><div class="v">${fmt(left)}</div><small>${Math.max(0,toPay-paidTx.length)} payment${toPay-paidTx.length===1?'':'s'} left</small></div>
+      <div class="stat"><div class="k">Your payout${mine.length>1?'s ('+mine.length+')':''}</div><div class="v ${got?'pos':''}">${fmt(pot*mine.length)}</div><small>${turnsTxt}</small></div>
       <div class="stat"><div class="k">Your position</div>${posTxt}</div>
       <div class="stat"><div class="k">Progress</div><div class="v">${Math.max(0,Math.min(n,c+1))} / ${n}</div><div class="cc-bar" style="margin-top:8px"><i style="width:${Math.max(0,Math.min(100,(c+1)/n*100))}%"></i></div></div>
      </div>
-     ${c<n?`<div class="muted" style="font-size:13px">${rndSkip(r)?`You pay ${fmt(r.amountCents)} to each of the other ${n-1} members in their month (${fmt(r.amountCents*(n-1))} in total) and skip your own month, when you receive ${fmt(pot)} (${fmt(r.amountCents)} from each of them).`:'Everyone pays every month, including the month they receive. You pay in '+fmt(r.amountCents*n)+' in total and get '+fmt(pot)+' back once.'}${until>0?` Before your turn you are saving; after it, the rest of your payments repay the group.`:''}</div>`:''}
+     ${c<n?`<div class="muted" style="font-size:13px">${rndSkip(r)?`Each month the other ${r.members-1} members pay ${fmt(r.amountCents)} to that month's receiver. You pay in ${toPay} months (${fmt(r.amountCents*toPay)}) and receive ${fmt(pot)} ${mine.length===1?'once':mine.length+' times'} (${fmt(pot*mine.length)}).`:`Everyone pays every month, including the month they receive. You pay in ${fmt(r.amountCents*n)} in total and receive ${fmt(pot*mine.length)}.`}${until!=null&&until>0?` Before your next turn you are saving; after it, your payments repay the group.`:''}</div>`:''}
      <div class="rnd-sched">${cells}</div>
     </section>`;
 }
@@ -4329,13 +4343,12 @@ function renderRounds(){
   const active=rounds.filter(r=>!rndOver(s,r)),past=rounds.filter(r=>rndOver(s,r));
   const editing=rndEditing?rounds.find(r=>r.id===rndEditing):null,showForm=editing||rndFormOpen||!rounds.length;
   const pay=active.reduce((a,r)=>a+r.amountCents,0);
-  host.innerHTML=`<div class="ana-top"><div><h2>Your rounds</h2><small>${active.length} active${past.length?' · '+past.length+' finished':''}${active.length?' · '+fmt(pay)+' a month in total':''}</small></div>${showForm?'':`<button class="btn primary" data-rnd-new>${mi('add')}New round</button>`}</div>
+  host.innerHTML=`<div class="ana-top"><div><h2>Your rounds</h2><small>${active.length} active${past.length?' · '+past.length+' finished':''}${active.length?' · up to '+fmt(pay)+' a month in total':''}</small></div>${showForm?'':`<button class="btn primary" data-rnd-new>${mi('add')}New round</button>`}</div>
    ${showForm?`<section class="card"><div class="ov-head"><h2>${editing?'Edit '+esc(editing.name):'Start a new round'}</h2></div>${rndForm(editing)}</section>`:''}
-   ${active.length?active.map(r=>rndCard(s,r)).join(''):rounds.length?'<div class="glass empty">No active round. Start a new one with “New round”.</div>':`<div class="glass empty mny-empty"><span class="material-symbols-outlined">groups</span><b>No rounds yet</b><span>A round (club / ROSCA): everyone pays the same amount each month and one member takes the whole pot in turn. You can run as many rounds as you like.</span></div>`}
+   ${active.length?active.map(r=>rndCard(s,r)).join(''):rounds.length?'<div class="glass empty">No active round. Start a new one with “New round”.</div>':`<div class="glass empty mny-empty"><span class="material-symbols-outlined">groups</span><b>No rounds yet</b><span>A round (club / ROSCA): everyone pays the same amount each month and one member takes the pot in turn. You can run as many rounds as you like.</span></div>`}
    ${past.length?`<details class="card" id="rndPast" ${rndPastOpen?'open':''}><summary style="cursor:pointer;font-weight:600">Past rounds (${past.length})</summary><div class="rnd" style="margin-top:14px">${past.map(r=>rndCard(s,r)).join('')}</div></details>`:''}`;
 }
 function rndSaveRounds(rounds){Store.set({rounds});Render.all();renderRounds()}
-// small dialog for date + name; resolves with values or null
 function rndAsk(title,fields,okLabel){return new Promise(res=>{
   const d=document.createElement('div');d.className='cc-sheet-scrim';
   d.innerHTML=`<form class="cc-sheet" role="dialog" aria-modal="true" aria-label="${esc(title)}" style="display:grid;gap:12px"><h3>${esc(title)}</h3>${fields.map(f=>`<label style="display:grid;gap:5px;font-size:13px;color:var(--cc-ink-2)">${esc(f.label)}<input name="${f.name}" type="${f.type||'text'}" ${f.type==='number'?'step="0.01" min="0.01"':''} ${f.required?'required':''} value="${esc(f.value??'')}" placeholder="${esc(f.ph||'')}" ${f.list?`list="rndNames"`:''}></label>`).join('')}<datalist id="rndNames">${[...new Set((Store.get().rounds||[]).flatMap(r=>r.names||[]).filter(x=>x&&x!=='You'))].map(x=>`<option value="${esc(x)}">`).join('')}</datalist><div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn ghost" data-x>Cancel</button><button class="btn primary" type="submit">${esc(okLabel||'Save')}</button></div></form>`;
@@ -4345,12 +4358,19 @@ function rndAsk(title,fields,okLabel){return new Promise(res=>{
   d.querySelector('form').addEventListener('submit',e=>{e.preventDefault();close(Object.fromEntries(new FormData(e.target)))});
   document.body.appendChild(d);d.querySelector('input').focus();
 })}
-function rndSetName(r,i,name){const names=[...(r.names||[])];while(names.length<r.members)names.push('');names[i]=name;return (Store.get().rounds||[]).map(x=>x.id===r.id?{...x,names}:x)}
+function rndSetName(r,i,name){const names=[...(r.names||[])];while(names.length<rndN(r))names.push('');names[i]=name;return (Store.get().rounds||[]).map(x=>x.id===r.id?{...x,names}:x)}
 document.addEventListener('submit',e=>{
   if(e.target.id!=='roundForm')return;e.preventDefault();const f=e.target,id=f.dataset.id;
-  const members=Math.max(2,parseInt(f.members.value)||2),turn=Math.min(members,Math.max(1,parseInt(f.turn.value)||1));
-  const names=f.names.value.split(',').map(x=>x.trim()).slice(0,members);
-  const data={name:f.name.value.trim()||'Round',amountCents:Utils.toCents(f.amount.value),startMonth:f.start.value,members,myTurn:turn,names,note:f.note.value.trim(),skipSelf:f.skip.checked};
+  const members=Math.max(2,parseInt(f.members.value)||2),me=f.me.value.trim();
+  const order=f.order.value.split(/[\n,]/).map(x=>x.trim()).filter(Boolean);
+  let months,myTurns,names;
+  if(order.length){
+    if(!me)return alert('Enter your name as it appears in the payout order.');
+    myTurns=order.map((x,i)=>x.toLowerCase()===me.toLowerCase()?i:-1).filter(i=>i>=0);
+    if(!myTurns.length)return alert('“'+me+'” is not in the payout order. Check the spelling.');
+    months=order.length;names=order;
+  }else{months=members;const t=Math.min(members,Math.max(1,parseInt(f.turn.value)||1));myTurns=[t-1];names=[]}
+  const data={name:f.name.value.trim()||'Round',amountCents:Utils.toCents(f.amount.value),startMonth:f.start.value,members,months,myTurns,myTurn:myTurns[0]+1,myName:me,names,note:f.note.value.trim(),skipSelf:f.skip.checked};
   if(!data.amountCents||!/^\d{4}-\d{2}$/.test(data.startMonth))return alert('Enter an amount and a first month.');
   const rounds=[...(Store.get().rounds||[])];
   if(id){const i=rounds.findIndex(r=>r.id===id);rounds[i]={...rounds[i],...data}}else rounds.push({id:Utils.uid(),...data,created:Utils.todayISO()});
@@ -4358,31 +4378,31 @@ document.addEventListener('submit',e=>{
 });
 document.addEventListener('click',async e=>{
   const B=a=>e.target.closest('['+a+']');let b;const s=Store.get(),R=id=>(s.rounds||[]).find(r=>r.id===id);
-  if(b=B('data-rnd-pay')){const r=R(b.getAttribute('data-rnd-pay')),i=+b.dataset.i;if(!r)return;const old=rndPaid(s,r,i),who=(r.names||[])[i]||'';
+  if(b=B('data-rnd-pay')){const r=R(b.getAttribute('data-rnd-pay')),i=+b.dataset.i;if(!r)return;const old=rndPaid(s,r,i),who=(r.names||[])[i]||'',mineM=rndIsMine(r,i);
     const v=await rndAsk((old?'Edit ':'Pay ')+rndMonthLabel(r,i)+' · '+r.name,[
-      {name:'who',label:i===r.myTurn-1?'Who receives the pot (this is your month)':'Who receives the pot this month',value:i===r.myTurn-1?'You':who,ph:'Name of the person',list:1},
+      {name:'who',label:mineM?'Who receives the pot (this is your month)':'Who receives the pot this month',value:mineM?'You':who,ph:'Name of the person',list:1},
       {name:'date',label:'Date you paid',type:'date',required:1,value:old?old.date:rndDefaultDate(r,i)},
       {name:'amount',label:'Amount',type:'number',required:1,value:Utils.fromCents(old?old.amountCents:r.amountCents)}],old?'Save':'Record payment');
     if(!v)return;const name=(v.who||'').trim(),amt=Utils.toCents(v.amount);if(!amt||!v.date)return;
     const note='Contribution for '+rndMonthLabel(r,i)+(name&&name!=='You'?' → '+name:'');
-    const rounds=i===r.myTurn-1?(s.rounds||[]):rndSetName(r,i,name);
+    const rounds=mineM?(s.rounds||[]):rndSetName(r,i,name);
     const txs=old?s.transactions.map(t=>t.id===old.id?{...t,date:v.date,amountCents:amt,note}:t):[...s.transactions,{id:Utils.uid(),type:'expense',date:v.date,category:'Round: '+r.name,amountCents:amt,note,recurring:'',nextDueDate:null,roundId:r.id,roundCycle:i}];
     Store.set({transactions:txs,rounds});Render.all();renderRounds();return}
   if(b=B('data-rnd-name')){const r=R(b.getAttribute('data-rnd-name')),i=+b.dataset.i;if(!r)return;const v=await rndAsk('Who receives in '+rndMonthLabel(r,i),[{name:'who',label:'Name',value:(r.names||[])[i]||'',list:1}]);if(!v)return;rndSaveRounds(rndSetName(r,i,(v.who||'').trim()));return}
   if(b=B('data-rnd-unpay')){const r=R(b.getAttribute('data-rnd-unpay')),t=r&&rndPaid(s,r,+b.dataset.i);if(t&&confirm('Remove this contribution from your ledger?')){Store.remove('transactions',t.id);Render.all();renderRounds()}return}
-  if(b=B('data-rnd-payout')){const r=R(b.getAttribute('data-rnd-payout'));if(!r)return;const old=rndPayout(s,r),pot=rndPot(r);
-    const v=await rndAsk((old?'Edit payout · ':'Record payout · ')+r.name,[
-      {name:'date',label:'Date you received the money',type:'date',required:1,value:old?old.date:rndDefaultDate(r,r.myTurn-1)},
+  if(b=B('data-rnd-payout')){const r=R(b.getAttribute('data-rnd-payout'));if(!r)return;const i=b.dataset.i!=null?+b.dataset.i:rndMine(r)[0],old=rndPayoutAt(s,r,i),pot=rndPot(r);
+    const v=await rndAsk((old?'Edit payout · ':'Record payout · ')+rndMonthLabel(r,i),[
+      {name:'date',label:'Date you received the money',type:'date',required:1,value:old?old.date:rndEndISO(r,i)},
       {name:'amount',label:'Amount received (normally '+fmt(pot)+')',type:'number',required:1,value:Utils.fromCents(old?old.amountCents:pot)}],old?'Save':'Record payout');
     if(!v)return;const amt=Utils.toCents(v.amount);if(!amt||!v.date)return;
-    if(old)Store.set({transactions:s.transactions.map(t=>t.id===old.id?{...t,date:v.date,amountCents:amt}:t)});
-    else Store.add('transactions',{id:Utils.uid(),type:'income',date:v.date,category:'Round payout: '+r.name,amountCents:amt,note:'My turn ('+rndMonthLabel(r,r.myTurn-1)+')',recurring:'',nextDueDate:null,roundId:r.id});
+    if(old)Store.set({transactions:s.transactions.map(t=>t.id===old.id?{...t,date:v.date,amountCents:amt,roundCycle:i}:t)});
+    else Store.add('transactions',{id:Utils.uid(),type:'income',date:v.date,category:'Round payout: '+r.name,amountCents:amt,note:'My turn ('+rndMonthLabel(r,i)+')',recurring:'',nextDueDate:null,roundId:r.id,roundCycle:i});
     Render.all();renderRounds();return}
-  if(b=B('data-rnd-unpayout')){const r=R(b.getAttribute('data-rnd-unpayout')),t=r&&rndPayout(s,r);if(t&&confirm('Remove the payout from your ledger?')){Store.remove('transactions',t.id);Render.all();renderRounds()}return}
+  if(b=B('data-rnd-unpayout')){const r=R(b.getAttribute('data-rnd-unpayout')),i=b.dataset.i!=null?+b.dataset.i:rndMine(r)[0],t=r&&rndPayoutAt(s,r,i);if(t&&confirm('Remove the payout from your ledger?')){Store.remove('transactions',t.id);Render.all();renderRounds()}return}
   if(B('data-rnd-new')){rndFormOpen=true;rndEditing=null;renderRounds();const f=document.getElementById('roundForm');if(f){f.scrollIntoView({behavior:'smooth',block:'center'});f.name.focus()}return}
   if(b=B('data-rnd-edit')){rndEditing=b.getAttribute('data-rnd-edit');renderRounds();document.getElementById('roundForm').scrollIntoView({behavior:'smooth',block:'center'});return}
   if(B('data-rnd-cancel')){rndEditing=null;rndFormOpen=false;renderRounds();return}
-  if(b=B('data-rnd-del')){const id=b.getAttribute('data-rnd-del');if(confirm('Delete this round? Its contributions and payout stay in your ledger.'))rndSaveRounds((s.rounds||[]).filter(r=>r.id!==id));return}
+  if(b=B('data-rnd-del')){const id=b.getAttribute('data-rnd-del');if(confirm('Delete this round? Its contributions and payouts stay in your ledger.'))rndSaveRounds((s.rounds||[]).filter(r=>r.id!==id));return}
 });
 
 /* ---------- Money → Analysis: how the money is being used ---------- */
