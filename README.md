@@ -38,6 +38,16 @@ Use **Settings → Export JSON / Import JSON** to move data or recover from a wi
 - Imports are validated and refused with a specific message when the file is malformed.
 - `*.json` is git-ignored so exports never reach the repo.
 
+## GitHub sync (optional)
+
+Settings → GitHub sync stores the whole data set as one JSON file in a **private** repository (the app refuses a public one) through the GitHub contents API, so every device you connect sees the same data.
+
+1. Create a new **private** repository, e.g. `command-center-data` (do not use the public app repo).
+2. Create a fine-grained token: GitHub → Settings → Developer settings → Fine-grained tokens → only that repository → Repository permissions → Contents: Read and write.
+3. In the app: Settings → GitHub sync → username, repository, token → Connect. Repeat on each device.
+
+Changes are pushed a few seconds after you stop editing. On start the newest copy is loaded; if two devices changed at once you choose which copy wins, and a raw snapshot (`garageFund.preSync.*`) is kept. The token is stored only in that browser.
+
 ## Run / deploy
 
 Open `index.html`, or push to GitHub and import into Vercel (Framework Preset: Other). `vercel.json` sets no-cache for `index.html` and `sw.js`. The service worker is network-first for HTML and bumps its cache name (`command-center-v3-glass`) so old caches are removed. Google Fonts load from a CDN; icons stay hidden if the icon font cannot load.

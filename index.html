@@ -806,6 +806,22 @@ tbody tr:last-child td{border-bottom:0}
       <p style="color:var(--ink-dim); margin:0">Personal Command Center · schema <span class="mono" id="schemaVersionDisplay"></span><br>Storage: <span class="mono">garageFund.v5.1</span> (finance, targets, ideas, plan, books) and <span class="mono">studyCommandCenterV1</span> (Study Center). The key names are kept so your existing data and older backups keep working.</p>
     </div>
     </div>
+    <div class="card" style="margin-top:16px" id="syncCard">
+      <h3><span class="dot"></span><span class="material-symbols-outlined">cloud_sync</span> GitHub sync</h3>
+      <p style="color:var(--ink-dim); margin:0 0 12px">Keep your data in a file in a <b>private</b> GitHub repository instead of only in this browser. Every change is saved there a few seconds later, and any phone or computer you connect loads the same data. Connect each device once with the same details.</p>
+      <div class="rnd-form">
+        <label>GitHub username<input id="syncOwner" placeholder="e.g. bromadex" autocomplete="off"></label>
+        <label>Private repository<input id="syncRepo" placeholder="e.g. command-center-data" autocomplete="off"></label>
+        <label>File path<input id="syncPath" placeholder="command-center.json" autocomplete="off"></label>
+        <label class="wide">Access token (fine-grained, only that repository, Contents: Read and write)<input id="syncToken" type="password" placeholder="github_pat_…" autocomplete="off"></label>
+      </div>
+      <div class="row" style="margin-top:12px;flex-wrap:wrap">
+        <button class="btn primary" id="syncConnect"><span class="material-symbols-outlined">link</span>Connect</button>
+        <button class="btn" id="syncNow" hidden><span class="material-symbols-outlined">sync</span>Sync now</button>
+        <button class="btn ghost" id="syncOff" hidden>Disconnect this device</button>
+      </div>
+      <p class="info" id="syncStatus" style="margin:12px 0 0"></p>
+    </div>
     <div class="card" style="margin-top:16px;border-color:rgba(255,142,142,.35)">
       <h3><span class="dot" style="background:var(--cc-bad);box-shadow:0 0 10px var(--cc-bad)"></span><span class="material-symbols-outlined" style="color:var(--cc-bad)">warning</span> Danger zone</h3>
       <p style="color:var(--ink-dim); margin:0 0 12px">Clearing removes every transaction, debt, budget, flip, target, idea, study-plan item and book note stored in this browser. A safety snapshot is saved first. Study Center data is wiped separately below.</p>
@@ -4128,7 +4144,7 @@ function badges(){
     const due=s.transactions.filter(x=>x.recurring&&x.nextDueDate&&x.nextDueDate<=t).length;
     const set=(id,n)=>document.querySelectorAll(`[data-badge="${id}"]`).forEach(b=>{b.hidden=!n;b.textContent=n});
     set('debts',od);set('money',due);
-    set('rounds',(s.rounds||[]).filter(r=>{const c=rndCur(r);return c>=0&&c<r.members&&!rndPaid(s,r,c)}).length);
+    set('rounds',(s.rounds||[]).filter(r=>rndDue(s,r,rndCur(r))).length);
   }catch(e){}
 }
 
@@ -4202,7 +4218,7 @@ function renderOverview(){
   // priorities
   const pr=[];
   s.debts.filter(d=>d.remainingAmountCents>0&&d.dueDate&&d.dueDate<today).forEach(d=>pr.push({cls:'bad',icon:'warning',t:(d.dir==='owed'?d.person+' owes you ':'You owe '+d.person+' ')+fmt(d.remainingAmountCents),s:'Overdue since '+d.dueDate,go:()=>go('debts')}));
-  (s.rounds||[]).forEach(r=>{const c=rndCur(r);if(c>=0&&c<r.members&&!rndPaid(s,r,c))pr.push({cls:'warn',icon:'groups',t:'Pay '+fmt(r.amountCents)+' to '+r.name,s:rndMonthLabel(r,c)+' contribution is due',go:()=>go('rounds')});if(!rndPayout(s,r)&&c>=r.myTurn-1&&c<r.members+1)pr.push({cls:'info',icon:'savings',t:'Your '+r.name+' payout is '+(c===r.myTurn-1?'this month':'due'),s:fmt(r.amountCents*r.members)+' · mark it received when it arrives',go:()=>go('rounds')})});
+  (s.rounds||[]).forEach(r=>{const c=rndCur(r);if(rndDue(s,r,c))pr.push({cls:'warn',icon:'groups',t:'Pay '+fmt(r.amountCents)+' to '+r.name,s:rndMonthLabel(r,c)+' contribution is due',go:()=>go('rounds')});if(!rndPayout(s,r)&&c>=r.myTurn-1&&c<r.members+1)pr.push({cls:'info',icon:'savings',t:'Your '+r.name+' payout is '+(c===r.myTurn-1?'this month':'due'),s:fmt(rndPot(r))+' · mark it received when it arrives',go:()=>go('rounds')})});
   if(due)pr.push({cls:'warn',icon:'autorenew',t:due+' recurring transaction'+(due>1?'s':'')+' due',s:'Process them to keep the ledger current',go:()=>{go('money','ledger')}});
   active.filter(t=>t.deadline&&t.left!==null&&t.left>=0&&t.left<=30&&!t.reached).forEach(t=>pr.push({cls:t.pct<50?'bad':'warn',icon:'flag',t:t.name+' is due in '+t.left+' day'+(t.left===1?'':'s'),s:(t.has?Math.round(t.pct)+'% funded':'No amount set')+(t.pct<50&&t.has?' · low progress':''),go:()=>{go('targets');Planner.openTarget(t.id)}}));
   active.filter(t=>t.late).forEach(t=>pr.push({cls:'bad',icon:'flag',t:t.name+' is past its deadline',s:Math.abs(t.left)+' days overdue',go:()=>{go('targets');Planner.openTarget(t.id)}}));
@@ -4259,6 +4275,10 @@ function rndCur(r){const t=Utils.todayISO().slice(0,7),[y0,m0]=r.startMonth.spli
 const rndTx=(s,r)=>s.transactions.filter(t=>t.roundId===r.id);
 const rndPaid=(s,r,i)=>rndTx(s,r).find(t=>t.type==='expense'&&t.roundCycle===i);
 const rndPayout=(s,r)=>rndTx(s,r).find(t=>t.type==='income');
+const rndSkip=r=>!!r.skipSelf;
+const rndPot=r=>r.amountCents*(r.members-(rndSkip(r)?1:0));
+const rndMustPay=(r,i)=>!(rndSkip(r)&&i===r.myTurn-1);
+const rndDue=(s,r,i)=>i>=0&&i<r.members&&rndMustPay(r,i)&&!rndPaid(s,r,i);
 const rndWho=(r,i)=>i===r.myTurn-1?'You':(((r.names||[])[i]||'').trim()||'Member '+(i+1));
 let rndEditing=null,rndFormOpen=false,rndPastOpen=false;
 document.addEventListener('toggle',e=>{if(e.target.id==='rndPast')rndPastOpen=e.target.open},true);
@@ -4266,7 +4286,7 @@ const rndEndISO=(r,i)=>{const[y,m]=rndMonth(r,i).split('-').map(Number);return i
 const rndDefaultDate=(r,i)=>{const t=Utils.todayISO(),e=rndEndISO(r,i);return e<t?e:t};
 const rndOver=(s,r)=>rndCur(r)>=r.members; // every month has passed
 function rndForm(r){
-  const v=r||{name:'',amountCents:50000,startMonth:Utils.todayISO().slice(0,7),members:10,myTurn:1,names:[],note:''};
+  const v=r||{name:'',amountCents:50000,startMonth:Utils.todayISO().slice(0,7),members:6,myTurn:1,names:[],note:'',skipSelf:true};
   return `<form id="roundForm" class="rnd-form" data-id="${r?r.id:''}">
     <label>Name<input name="name" required placeholder="e.g. November club" value="${esc(v.name)}"></label>
     <label>Amount each month<input name="amount" type="number" step="0.01" min="0.01" required value="${Utils.fromCents(v.amountCents)}"></label>
@@ -4274,33 +4294,34 @@ function rndForm(r){
     <label>Number of members<input name="members" type="number" min="2" max="60" required value="${v.members}"></label>
     <label>Your turn to receive (1 = first month)<input name="turn" type="number" min="1" max="60" required value="${v.myTurn}"></label>
     <label>Note<input name="note" placeholder="Optional" value="${esc(v.note||'')}"></label>
+    <label class="wide" style="display:flex;gap:10px;align-items:center;color:var(--cc-ink)"><input name="skip" type="checkbox" style="width:auto" ${v.skipSelf?'checked':''}> I don't pay in my own month (e.g. 6 members: I pay the other 5 and receive 5 × the amount)</label>
     <label class="wide">Who receives each month, in order (optional, comma separated, include yourself). You can also set the name when you pay.<input name="names" placeholder="e.g. Tendai, Rudo, Me, Farai" value="${esc((v.names||[]).join(', '))}"></label>
-    <div class="wide"><button class="btn primary" type="submit">${r?'Save changes':'Create round'}</button> ${r||rndFormOpen?'<button class="btn ghost" type="button" data-rnd-cancel>Cancel</button>':''} <span class="muted" style="font-size:12.5px">Pot each month = amount × members. Paying or receiving here adds the transaction to your ledger.</span></div>
+    <div class="wide"><button class="btn primary" type="submit">${r?'Save changes':'Create round'}</button> ${r||rndFormOpen?'<button class="btn ghost" type="button" data-rnd-cancel>Cancel</button>':''} <span class="muted" style="font-size:12.5px">Pot = amount × the members who pay that month. Paying or receiving here adds the transaction to your ledger.</span></div>
    </form>`;
 }
 function rndCard(s,r){
-    const n=r.members,pot=r.amountCents*n,c=rndCur(r),tx=rndTx(s,r);
+    const n=r.members,pot=rndPot(r),c=rndCur(r),tx=rndTx(s,r),toPay=n-(rndSkip(r)?1:0);
     const paidTx=tx.filter(t=>t.type==='expense'),paid=paidTx.reduce((a,t)=>a+t.amountCents,0),po=rndPayout(s,r),got=po?po.amountCents:0;
-    const missing=[...Array(n)].map((_,i)=>i).filter(i=>i<=Math.min(c,n-1)&&!rndPaid(s,r,i));
-    const left=Math.max(0,n-paidTx.length)*r.amountCents,pos=paid-got;
+    const missing=[...Array(n)].map((_,i)=>i).filter(i=>i<=Math.min(c,n-1)&&rndDue(s,r,i));
+    const left=Math.max(0,toPay-paidTx.length)*r.amountCents,pos=paid-got;
     const myM=rndMonthLabel(r,r.myTurn-1),until=r.myTurn-1-c;
-    const curDue=c>=0&&c<n&&!rndPaid(s,r,c),payoutDue=!po&&c>=r.myTurn-1;
+    const curDue=rndDue(s,r,c),payoutDue=!po&&c>=r.myTurn-1;
     const status=c<0?'Starts '+rndMonthLabel(r,0):c>=n?(missing.length?'Ended · '+missing.length+' month'+(missing.length===1?'':'s')+' not recorded':'Ended '+rndMonthLabel(r,n-1)):'Month '+(c+1)+' of '+n;
     const posTxt=pos>0?`<div class="v pos">${fmt(pos)}</div><small>The club holds this much of yours</small>`:pos<0?`<div class="v neg">${fmt(-pos)}</div><small>You still owe the club this (credit)</small>`:`<div class="v">${fmt(0)}</div><small>Even with the club</small>`;
     const cells=[...Array(n)].map((_,i)=>{const p=rndPaid(s,r,i),me=i===r.myTurn-1,who=rndWho(r,i);
-      const chip=p?`<span class="rnd-chip paid">Paid ${p.date}</span>`:i<c?`<span class="rnd-chip miss">Not recorded</span>`:i===c?`<span class="rnd-chip due">Due now</span>`:`<span class="rnd-chip">Upcoming</span>`;
-      return `<div class="rnd-cell ${me?'me':''} ${i===c?'now':''}"><b>${rndMonthLabel(r,i)}</b><span class="who">${mi(me?'star':'person')} ${esc(who)} receive${who==='You'?'':'s'} ${fmt(pot)}</span>${chip}<span class="rnd-acts">${p?`<button class="btn ghost small" data-rnd-pay="${r.id}" data-i="${i}">Edit</button><button class="btn ghost small" data-rnd-unpay="${r.id}" data-i="${i}">Undo</button>`:i<=c+1?`<button class="btn small" data-rnd-pay="${r.id}" data-i="${i}">Pay ${fmt(r.amountCents)}</button>`:`<button class="btn ghost small" data-rnd-name="${r.id}" data-i="${i}">Set name</button>`}</span></div>`}).join('');
+      const free=!rndMustPay(r,i);const chip=p?`<span class="rnd-chip paid">Paid ${p.date}</span>`:free?`<span class="rnd-chip paid">Your month · you don't pay</span>`:i<c?`<span class="rnd-chip miss">Not recorded</span>`:i===c?`<span class="rnd-chip due">Due now</span>`:`<span class="rnd-chip">Upcoming</span>`;
+      return `<div class="rnd-cell ${me?'me':''} ${i===c?'now':''}"><b>${rndMonthLabel(r,i)}</b><span class="who">${mi(me?'star':'person')} ${esc(who)} receive${who==='You'?'':'s'} ${fmt(pot)}</span>${chip}<span class="rnd-acts">${free&&!p?'':p?`<button class="btn ghost small" data-rnd-pay="${r.id}" data-i="${i}">Edit</button><button class="btn ghost small" data-rnd-unpay="${r.id}" data-i="${i}">Undo</button>`:i<=c+1?`<button class="btn small" data-rnd-pay="${r.id}" data-i="${i}">Pay ${fmt(r.amountCents)}</button>`:`<button class="btn ghost small" data-rnd-name="${r.id}" data-i="${i}">Set name</button>`}</span></div>`}).join('');
     return `<section class="card rnd-card">
      <div class="rnd-head"><div><h2>${esc(r.name)}</h2><small>${fmt(r.amountCents)} a month · ${n} members · pot ${fmt(pot)} · ${status}${r.note?' · '+esc(r.note):''}</small></div>
       <div class="rnd-acts">${curDue?`<button class="btn primary" data-rnd-pay="${r.id}" data-i="${c}">${mi('payments')}Pay ${rndMonthLabel(r,c).split(' ')[0]}'s ${fmt(r.amountCents)}</button>`:''}${payoutDue?`<button class="btn primary" data-rnd-payout="${r.id}">${mi('savings')}I received my ${fmt(pot)}</button>`:''}${po?`<button class="btn ghost small" data-rnd-payout="${r.id}">Edit payout</button><button class="btn ghost small" data-rnd-unpayout="${r.id}">Undo payout</button>`:''}<button class="btn ghost small" data-rnd-edit="${r.id}">Edit round</button><button class="btn ghost small" data-rnd-del="${r.id}">Delete</button></div></div>
      <div class="ana-tiles">
-      <div class="stat"><div class="k">Paid in</div><div class="v">${fmt(paid)}</div><small>${paidTx.length} of ${n} months</small></div>
-      <div class="stat"><div class="k">Still to pay</div><div class="v">${fmt(left)}</div><small>${Math.max(0,n-paidTx.length)} month${n-paidTx.length===1?'':'s'} left</small></div>
+      <div class="stat"><div class="k">Paid in</div><div class="v">${fmt(paid)}</div><small>${paidTx.length} of ${toPay} months</small></div>
+      <div class="stat"><div class="k">Still to pay</div><div class="v">${fmt(left)}</div><small>${Math.max(0,toPay-paidTx.length)} month${toPay-paidTx.length===1?'':'s'} left</small></div>
       <div class="stat"><div class="k">Your payout</div><div class="v ${po?'pos':''}">${fmt(po?got:pot)}</div><small>${po?'Received '+po.date:until>0?myM+' · in '+until+' month'+(until===1?'':'s'):until===0?myM+' · this month':myM+' · not marked received'}</small></div>
       <div class="stat"><div class="k">Your position</div>${posTxt}</div>
       <div class="stat"><div class="k">Progress</div><div class="v">${Math.max(0,Math.min(n,c+1))} / ${n}</div><div class="cc-bar" style="margin-top:8px"><i style="width:${Math.max(0,Math.min(100,(c+1)/n*100))}%"></i></div></div>
      </div>
-     ${c<n?`<div class="muted" style="font-size:13px">${until>0?`Until your turn you are saving: by ${myM} you will have paid in ${fmt(r.amountCents*r.myTurn)} and receive ${fmt(pot)}, so ${fmt(pot-r.amountCents*r.myTurn)} of your payout is effectively credit from the group that you repay over the remaining ${n-r.myTurn} month${n-r.myTurn===1?'':'s'}.`:'Everyone pays every month, including the month they receive. You pay in '+fmt(pot)+' in total and get '+fmt(pot)+' back once.'}</div>`:''}
+     ${c<n?`<div class="muted" style="font-size:13px">${rndSkip(r)?`You pay ${fmt(r.amountCents)} to each of the other ${n-1} members in their month (${fmt(r.amountCents*(n-1))} in total) and skip your own month, when you receive ${fmt(pot)} (${fmt(r.amountCents)} from each of them).`:'Everyone pays every month, including the month they receive. You pay in '+fmt(r.amountCents*n)+' in total and get '+fmt(pot)+' back once.'}${until>0?` Before your turn you are saving; after it, the rest of your payments repay the group.`:''}</div>`:''}
      <div class="rnd-sched">${cells}</div>
     </section>`;
 }
@@ -4331,7 +4352,7 @@ document.addEventListener('submit',e=>{
   if(e.target.id!=='roundForm')return;e.preventDefault();const f=e.target,id=f.dataset.id;
   const members=Math.max(2,parseInt(f.members.value)||2),turn=Math.min(members,Math.max(1,parseInt(f.turn.value)||1));
   const names=f.names.value.split(',').map(x=>x.trim()).slice(0,members);
-  const data={name:f.name.value.trim()||'Round',amountCents:Utils.toCents(f.amount.value),startMonth:f.start.value,members,myTurn:turn,names,note:f.note.value.trim()};
+  const data={name:f.name.value.trim()||'Round',amountCents:Utils.toCents(f.amount.value),startMonth:f.start.value,members,myTurn:turn,names,note:f.note.value.trim(),skipSelf:f.skip.checked};
   if(!data.amountCents||!/^\d{4}-\d{2}$/.test(data.startMonth))return alert('Enter an amount and a first month.');
   const rounds=[...(Store.get().rounds||[])];
   if(id){const i=rounds.findIndex(r=>r.id===id);rounds[i]={...rounds[i],...data}}else rounds.push({id:Utils.uid(),...data,created:Utils.todayISO()});
@@ -4351,7 +4372,7 @@ document.addEventListener('click',async e=>{
     Store.set({transactions:txs,rounds});Render.all();renderRounds();return}
   if(b=B('data-rnd-name')){const r=R(b.getAttribute('data-rnd-name')),i=+b.dataset.i;if(!r)return;const v=await rndAsk('Who receives in '+rndMonthLabel(r,i),[{name:'who',label:'Name',value:(r.names||[])[i]||'',list:1}]);if(!v)return;rndSaveRounds(rndSetName(r,i,(v.who||'').trim()));return}
   if(b=B('data-rnd-unpay')){const r=R(b.getAttribute('data-rnd-unpay')),t=r&&rndPaid(s,r,+b.dataset.i);if(t&&confirm('Remove this contribution from your ledger?')){Store.remove('transactions',t.id);Render.all();renderRounds()}return}
-  if(b=B('data-rnd-payout')){const r=R(b.getAttribute('data-rnd-payout'));if(!r)return;const old=rndPayout(s,r),pot=r.amountCents*r.members;
+  if(b=B('data-rnd-payout')){const r=R(b.getAttribute('data-rnd-payout'));if(!r)return;const old=rndPayout(s,r),pot=rndPot(r);
     const v=await rndAsk((old?'Edit payout · ':'Record payout · ')+r.name,[
       {name:'date',label:'Date you received the money',type:'date',required:1,value:old?old.date:rndDefaultDate(r,r.myTurn-1)},
       {name:'amount',label:'Amount received (normally '+fmt(pot)+')',type:'number',required:1,value:Utils.fromCents(old?old.amountCents:pot)}],old?'Save':'Record payout');
@@ -4556,6 +4577,95 @@ setCollapsed(ls.get('cc.collapsed')==='1');
 fromHash();
 })();
 
+</script>
+
+<script>
+/* ============================================================
+   GitHub sync: the whole data set (finance + planner + Study Center, without
+   per-device UI state) is stored as one JSON file in a PRIVATE repository via the
+   GitHub contents API. The token stays in this browser's storage only.
+   - On start: if GitHub has a newer version and this device has no unsynced
+     changes, it is loaded. If both changed, you choose which copy wins.
+   - Changes are pushed a few seconds after they stop.
+   A raw snapshot is saved before any GitHub copy replaces local data.
+   ============================================================ */
+(function(){
+'use strict';
+const FIN='garageFund.v5.1',SC='studyCommandCenterV1',CFG='cc.sync.cfg',BASE='cc.sync.sha',HASH='cc.sync.hash',LAST='cc.sync.last';
+const ls={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}},del:k=>{try{localStorage.removeItem(k)}catch(e){}}};
+const $=id=>document.getElementById(id);
+const cfg=()=>{try{return JSON.parse(ls.get(CFG)||'null')}catch(e){return null}};
+const strip=o=>{const c={...o};delete c.ui;delete c.exportMeta;return c};
+function payload(){
+  const fin=JSON.parse(ls.get(FIN)||'{}'),sc=JSON.parse(ls.get(SC)||'null');
+  const out=strip(fin);if(sc){const {ui,...rest}=sc;out.studyCenter=rest}
+  return out;
+}
+const hashOf=str=>{let h=5381;for(let i=0;i<str.length;i++)h=((h<<5)+h+str.charCodeAt(i))|0;return String(h>>>0)};
+const enc=str=>btoa(unescape(encodeURIComponent(str))),dec=b=>decodeURIComponent(escape(atob(b.replace(/\n/g,''))));
+let busy=false,timer=null,lastSeen=null;
+function status(msg,bad){const el=$('syncStatus');if(el){el.textContent=msg;el.style.color=bad?'var(--cc-bad)':''}}
+function paintCard(){const c=cfg();if(!$('syncCard'))return;
+  $('syncOwner').value=c?c.owner:'';$('syncRepo').value=c?c.repo:'';$('syncPath').value=c?c.path:'';$('syncToken').value=c?'••••••••':'';
+  $('syncNow').hidden=$('syncOff').hidden=!c;$('syncConnect').innerHTML=`<span class="material-symbols-outlined">link</span>${c?'Update connection':'Connect'}`;
+  if(!c)status('Not connected. Data is only in this browser.');
+  else{const l=ls.get(LAST);status('Connected to '+c.owner+'/'+c.repo+(l?' · last synced '+new Date(l).toLocaleString():''))}}
+async function api(c,method,body){
+  const url=`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}/contents/${c.path.split('/').map(encodeURIComponent).join('/')}`;
+  const r=await fetch(url+(method==='GET'?'?t='+Date.now():''),{method,headers:{Authorization:'Bearer '+c.token,Accept:'application/vnd.github+json'},body:body?JSON.stringify(body):undefined,cache:'no-store'});
+  if(r.status===404&&method==='GET')return null;
+  if(!r.ok){const t=await r.json().catch(()=>({}));const e=new Error(t.message||('GitHub error '+r.status));e.status=r.status;throw e}
+  return r.json();
+}
+async function push(c,str,sha){
+  const res=await api(c,'PUT',{message:'Update data '+new Date().toISOString(),content:enc(JSON.stringify(JSON.parse(str),null,1)),sha:sha||undefined});
+  ls.set(BASE,res.content.sha);ls.set(HASH,hashOf(str));ls.set(LAST,new Date().toISOString());lastSeen=hashOf(str);paintCard();
+}
+function apply(remote){
+  // keep a raw copy of what this device had, then load the GitHub copy
+  try{ls.set('garageFund.preSync.'+new Date().toISOString().replace(/[:.]/g,'-'),ls.get(FIN)||'');const k=Object.keys(localStorage).filter(x=>x.startsWith('garageFund.preSync.')).sort();while(k.length>3)ls.del(k.shift())}catch(e){}
+  const localFin=JSON.parse(ls.get(FIN)||'{}'),localSc=JSON.parse(ls.get(SC)||'null');
+  const {studyCenter,...fin}=remote;fin.ui=localFin.ui||fin.ui;ls.set(FIN,JSON.stringify(fin));
+  if(studyCenter)ls.set(SC,JSON.stringify({...studyCenter,ui:(localSc&&localSc.ui)||studyCenter.ui}));
+}
+async function sync(manual){
+  const c=cfg();if(!c||busy)return;busy=true;
+  try{
+    if(manual)status('Syncing…');
+    const remote=await api(c,'GET'),str=JSON.stringify(payload()),h=hashOf(str),base=ls.get(BASE),localChanged=h!==ls.get(HASH);
+    if(!remote){await push(c,str,null);status('Your data is now on GitHub.');return}
+    if(remote.sha===base){if(localChanged)await push(c,str,remote.sha);else{ls.set(LAST,new Date().toISOString());paintCard()}return}
+    // GitHub has a version this device has not seen yet
+    if(!remote.content)throw new Error('The data file is too large to read through the API (over 1 MB).');
+    const data=JSON.parse(dec(remote.content));
+    if(hashOf(JSON.stringify(strip(data)))===h){ls.set(BASE,remote.sha);ls.set(HASH,h);ls.set(LAST,new Date().toISOString());paintCard();return}
+    const takeRemote=!localChanged||!base||confirm('Your data changed on this device AND on another device since the last sync.\n\nOK = load the GitHub copy (this device\'s copy is kept as a backup snapshot).\nCancel = keep this device\'s copy and overwrite GitHub.');
+    if(takeRemote){apply(data);ls.set(BASE,remote.sha);ls.set(HASH,hashOf(JSON.stringify(payload())));ls.set(LAST,new Date().toISOString());location.reload();return}
+    await push(c,str,remote.sha);
+  }catch(e){status('Sync problem: '+e.message+(e.status===401?' (check the token)':e.status===404?' (check username, repository and that the token can access it)':''),true)}
+  finally{busy=false}
+}
+// push shortly after changes stop
+setInterval(()=>{const c=cfg();if(!c||busy)return;const h=hashOf(JSON.stringify(payload()));if(h===ls.get(HASH)){lastSeen=h;return}
+  if(h!==lastSeen){lastSeen=h;clearTimeout(timer);timer=setTimeout(()=>sync(false),4000)}},3000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')sync(false)});
+document.addEventListener('click',async e=>{
+  if(e.target.closest('#syncConnect')){
+    const old=cfg(),tokIn=$('syncToken').value.trim(),c={owner:$('syncOwner').value.trim(),repo:$('syncRepo').value.trim(),path:($('syncPath').value.trim()||'command-center.json').replace(/^\/+/,''),token:tokIn&&!/^•+$/.test(tokIn)?tokIn:(old&&old.token)};
+    if(!c.owner||!c.repo||!c.token)return status('Fill in username, repository and token.',true);
+    status('Checking the repository…');
+    try{const r=await fetch(`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}`,{headers:{Authorization:'Bearer '+c.token,Accept:'application/vnd.github+json'}});
+      if(!r.ok)throw new Error(r.status===404?'Repository not found or the token cannot see it.':r.status===401?'The token was rejected.':'GitHub error '+r.status);
+      const info=await r.json();if(!info.private)return status('That repository is PUBLIC, so anyone could read your finances. Make it private (or create a new private one) and try again.',true);
+    }catch(err){return status(err.message,true)}
+    const changedTarget=!old||old.owner!==c.owner||old.repo!==c.repo||old.path!==c.path;
+    ls.set(CFG,JSON.stringify(c));if(changedTarget){ls.del(BASE);ls.del(HASH)}
+    paintCard();sync(true);return}
+  if(e.target.closest('#syncNow'))return sync(true);
+  if(e.target.closest('#syncOff')){if(confirm('Disconnect this device from GitHub? Your data stays in this browser and on GitHub.')){[CFG,BASE,HASH,LAST].forEach(ls.del);paintCard()}}
+});
+paintCard();sync(false);
+})();
 </script>
 </body>
 </html>
