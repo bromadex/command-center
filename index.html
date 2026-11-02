@@ -807,18 +807,16 @@ tbody tr:last-child td{border-bottom:0}
     </div>
     </div>
     <div class="card" style="margin-top:16px" id="syncCard">
-      <h3><span class="dot"></span><span class="material-symbols-outlined">cloud_sync</span> GitHub sync</h3>
-      <p style="color:var(--ink-dim); margin:0 0 12px">Keep your data in a file in a <b>private</b> GitHub repository instead of only in this browser. Every change is saved there a few seconds later, and any phone or computer you connect loads the same data. Connect each device once with the same details.</p>
-      <div class="rnd-form">
-        <label>GitHub username<input id="syncOwner" placeholder="e.g. bromadex" autocomplete="off"></label>
-        <label>Private repository<input id="syncRepo" placeholder="e.g. command-center-data" autocomplete="off"></label>
-        <label>File path<input id="syncPath" placeholder="command-center.json" autocomplete="off"></label>
-        <label class="wide">Access token (fine-grained, only that repository, Contents: Read and write)<input id="syncToken" type="password" placeholder="github_pat_…" autocomplete="off"></label>
+      <h3><span class="dot"></span><span class="material-symbols-outlined">cloud_sync</span> Cloud sync (Supabase)</h3>
+      <p style="color:var(--ink-dim); margin:0 0 12px">Sign in to keep your data in your private Supabase table instead of only in this browser. Every change is saved a few seconds later, and any phone or computer you sign in on loads the same data. Only your account can read it.</p>
+      <div class="rnd-form" id="sbForm">
+        <label>Email<input id="sbEmail" type="email" autocomplete="username" placeholder="you@example.com"></label>
+        <label>Password<input id="sbPass" type="password" autocomplete="current-password"></label>
+        <div style="display:flex;align-items:flex-end"><button class="btn primary" id="sbIn"><span class="material-symbols-outlined">login</span>Sign in</button></div>
       </div>
-      <div class="row" style="margin-top:12px;flex-wrap:wrap">
-        <button class="btn primary" id="syncConnect"><span class="material-symbols-outlined">link</span>Connect</button>
-        <button class="btn" id="syncNow" hidden><span class="material-symbols-outlined">sync</span>Sync now</button>
-        <button class="btn ghost" id="syncOff" hidden>Disconnect this device</button>
+      <div class="row" style="flex-wrap:wrap" id="sbActs" hidden>
+        <button class="btn" id="sbNow"><span class="material-symbols-outlined">sync</span>Sync now</button>
+        <button class="btn ghost" id="sbOut">Sign out on this device</button>
       </div>
       <p class="info" id="syncStatus" style="margin:12px 0 0"></p>
     </div>
@@ -4581,90 +4579,86 @@ fromHash();
 
 <script>
 /* ============================================================
-   GitHub sync: the whole data set (finance + planner + Study Center, without
-   per-device UI state) is stored as one JSON file in a PRIVATE repository via the
-   GitHub contents API. The token stays in this browser's storage only.
-   - On start: if GitHub has a newer version and this device has no unsynced
-     changes, it is loaded. If both changed, you choose which copy wins.
-   - Changes are pushed a few seconds after they stop.
-   A raw snapshot is saved before any GitHub copy replaces local data.
+   Cloud sync (Supabase): the whole data set (finance + planner + Study Center,
+   without per-device UI state) is one JSON row in public.cc_personal_data,
+   readable and writable only by the signed-in owner (row level security).
+   Plain fetch against Supabase Auth + REST, no library.
+   - On start / when the tab is focused: a newer cloud copy is loaded if this device
+     has no unsynced changes; if both changed you choose which copy wins.
+   - Changes are pushed a few seconds after they stop (optimistic "rev" check).
+   A raw snapshot is kept before cloud data replaces local data.
    ============================================================ */
 (function(){
 'use strict';
-const FIN='garageFund.v5.1',SC='studyCommandCenterV1',CFG='cc.sync.cfg',BASE='cc.sync.sha',HASH='cc.sync.hash',LAST='cc.sync.last';
+const SB='https://ybhvbvrxuzrwmozmsfic.supabase.co',KEY='sb_publishable_EDPyjY4arbgUlP756I5RIA_c7z3L07I',TABLE='cc_personal_data';
+const FIN='garageFund.v5.1',SC='studyCommandCenterV1',SESS='cc.sb.session',BASE='cc.sync.rev',HASH='cc.sync.hash',LAST='cc.sync.last';
 const ls={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}},del:k=>{try{localStorage.removeItem(k)}catch(e){}}};
 const $=id=>document.getElementById(id);
-const cfg=()=>{try{return JSON.parse(ls.get(CFG)||'null')}catch(e){return null}};
+const sess=()=>{try{return JSON.parse(ls.get(SESS)||'null')}catch(e){return null}};
 const strip=o=>{const c={...o};delete c.ui;delete c.exportMeta;return c};
-function payload(){
-  const fin=JSON.parse(ls.get(FIN)||'{}'),sc=JSON.parse(ls.get(SC)||'null');
-  const out=strip(fin);if(sc){const {ui,...rest}=sc;out.studyCenter=rest}
-  return out;
-}
+function payload(){const fin=JSON.parse(ls.get(FIN)||'{}'),sc=JSON.parse(ls.get(SC)||'null');const out=strip(fin);if(sc){const {ui,...rest}=sc;out.studyCenter=rest}return out}
 const hashOf=str=>{let h=5381;for(let i=0;i<str.length;i++)h=((h<<5)+h+str.charCodeAt(i))|0;return String(h>>>0)};
-const enc=str=>btoa(unescape(encodeURIComponent(str))),dec=b=>decodeURIComponent(escape(atob(b.replace(/\n/g,''))));
 let busy=false,timer=null,lastSeen=null;
 function status(msg,bad){const el=$('syncStatus');if(el){el.textContent=msg;el.style.color=bad?'var(--cc-bad)':''}}
-function paintCard(){const c=cfg();if(!$('syncCard'))return;
-  $('syncOwner').value=c?c.owner:'';$('syncRepo').value=c?c.repo:'';$('syncPath').value=c?c.path:'';$('syncToken').value=c?'••••••••':'';
-  $('syncNow').hidden=$('syncOff').hidden=!c;$('syncConnect').innerHTML=`<span class="material-symbols-outlined">link</span>${c?'Update connection':'Connect'}`;
-  if(!c)status('Not connected. Data is only in this browser.');
-  else{const l=ls.get(LAST);status('Connected to '+c.owner+'/'+c.repo+(l?' · last synced '+new Date(l).toLocaleString():''))}}
-async function api(c,method,body){
-  const url=`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}/contents/${c.path.split('/').map(encodeURIComponent).join('/')}`;
-  const r=await fetch(url+(method==='GET'?'?t='+Date.now():''),{method,headers:{Authorization:'Bearer '+c.token,Accept:'application/vnd.github+json'},body:body?JSON.stringify(body):undefined,cache:'no-store'});
-  if(r.status===404&&method==='GET')return null;
-  if(!r.ok){const t=await r.json().catch(()=>({}));const e=new Error(t.message||('GitHub error '+r.status));e.status=r.status;throw e}
-  return r.json();
+function paint(){const se=sess();if(!$('syncCard'))return;$('sbForm').hidden=!!se;$('sbActs').hidden=!se;
+  if(!se)status('Not signed in. Data is only in this browser.');else{const l=ls.get(LAST);status('Signed in as '+se.user.email+(l?' · last synced '+new Date(l).toLocaleString():''))}}
+async function auth(body,grant){
+  const r=await fetch(SB+'/auth/v1/token?grant_type='+grant,{method:'POST',headers:{apikey:KEY,'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error_description||j.msg||j.message||'Sign-in failed ('+r.status+')');
+  const se={access_token:j.access_token,refresh_token:j.refresh_token,expires_at:Date.now()+(j.expires_in||3600)*1000,user:{id:j.user.id,email:j.user.email}};ls.set(SESS,JSON.stringify(se));return se;
 }
-async function push(c,str,sha){
-  const res=await api(c,'PUT',{message:'Update data '+new Date().toISOString(),content:enc(JSON.stringify(JSON.parse(str),null,1)),sha:sha||undefined});
-  ls.set(BASE,res.content.sha);ls.set(HASH,hashOf(str));ls.set(LAST,new Date().toISOString());lastSeen=hashOf(str);paintCard();
+async function token(){let se=sess();if(!se)throw new Error('Not signed in');
+  if(Date.now()>se.expires_at-60000){try{se=await auth({refresh_token:se.refresh_token},'refresh_token')}catch(e){ls.del(SESS);paint();throw new Error('Your sign-in expired. Please sign in again.')}}
+  return se}
+async function rest(method,query,body,prefer){
+  const se=await token();
+  const r=await fetch(SB+'/rest/v1/'+TABLE+query,{method,headers:{apikey:KEY,Authorization:'Bearer '+se.access_token,'Content-Type':'application/json',Prefer:prefer||'return=representation'},body:body?JSON.stringify(body):undefined,cache:'no-store'});
+  const j=await r.json().catch(()=>null);if(!r.ok)throw new Error((j&&(j.message||j.hint))||('Supabase error '+r.status));return j;
 }
+const mark=(rev,str)=>{ls.set(BASE,String(rev));ls.set(HASH,hashOf(str));ls.set(LAST,new Date().toISOString());lastSeen=hashOf(str);paint()};
 function apply(remote){
-  // keep a raw copy of what this device had, then load the GitHub copy
   try{ls.set('garageFund.preSync.'+new Date().toISOString().replace(/[:.]/g,'-'),ls.get(FIN)||'');const k=Object.keys(localStorage).filter(x=>x.startsWith('garageFund.preSync.')).sort();while(k.length>3)ls.del(k.shift())}catch(e){}
   const localFin=JSON.parse(ls.get(FIN)||'{}'),localSc=JSON.parse(ls.get(SC)||'null');
   const {studyCenter,...fin}=remote;fin.ui=localFin.ui||fin.ui;ls.set(FIN,JSON.stringify(fin));
   if(studyCenter)ls.set(SC,JSON.stringify({...studyCenter,ui:(localSc&&localSc.ui)||studyCenter.ui}));
 }
 async function sync(manual){
-  const c=cfg();if(!c||busy)return;busy=true;
+  const se=sess();if(!se||busy)return;busy=true;
   try{
     if(manual)status('Syncing…');
-    const remote=await api(c,'GET'),str=JSON.stringify(payload()),h=hashOf(str),base=ls.get(BASE),localChanged=h!==ls.get(HASH);
-    if(!remote){await push(c,str,null);status('Your data is now on GitHub.');return}
-    if(remote.sha===base){if(localChanged)await push(c,str,remote.sha);else{ls.set(LAST,new Date().toISOString());paintCard()}return}
-    // GitHub has a version this device has not seen yet
-    if(!remote.content)throw new Error('The data file is too large to read through the API (over 1 MB).');
-    const data=JSON.parse(dec(remote.content));
-    if(hashOf(JSON.stringify(strip(data)))===h){ls.set(BASE,remote.sha);ls.set(HASH,h);ls.set(LAST,new Date().toISOString());paintCard();return}
-    const takeRemote=!localChanged||!base||confirm('Your data changed on this device AND on another device since the last sync.\n\nOK = load the GitHub copy (this device\'s copy is kept as a backup snapshot).\nCancel = keep this device\'s copy and overwrite GitHub.');
-    if(takeRemote){apply(data);ls.set(BASE,remote.sha);ls.set(HASH,hashOf(JSON.stringify(payload())));ls.set(LAST,new Date().toISOString());location.reload();return}
-    await push(c,str,remote.sha);
-  }catch(e){status('Sync problem: '+e.message+(e.status===401?' (check the token)':e.status===404?' (check username, repository and that the token can access it)':''),true)}
+    const uid=(await token()).user.id,rows=await rest('GET','?select=data,rev&user_id=eq.'+uid),remote=rows&&rows[0];
+    const str=JSON.stringify(payload()),h=hashOf(str),base=ls.get(BASE),localChanged=h!==ls.get(HASH);
+    if(!remote){const ins=await rest('POST','',{user_id:uid,data:JSON.parse(str),rev:1});mark(ins[0].rev,str);status('Your data is now saved in the cloud.');return}
+    if(String(remote.rev)===base){
+      if(!localChanged){ls.set(LAST,new Date().toISOString());paint();return}
+      const up=await rest('PATCH','?user_id=eq.'+uid+'&rev=eq.'+remote.rev,{data:JSON.parse(str),rev:remote.rev+1});
+      if(up&&up.length){mark(up[0].rev,str);return}
+      busy=false;return sync(manual); // someone else saved in between: re-check
+    }
+    // the cloud has a version this device has not seen
+    if(hashOf(JSON.stringify(strip(remote.data)))===h){mark(remote.rev,str);return}
+    const takeRemote=!localChanged||!base||confirm('Your data changed on this device AND on another device since the last sync.\n\nOK = load the cloud copy (this device\'s copy is kept as a backup snapshot).\nCancel = keep this device\'s copy and overwrite the cloud.');
+    if(takeRemote){apply(remote.data);mark(remote.rev,JSON.stringify(payload()));location.reload();return}
+    const up=await rest('PATCH','?user_id=eq.'+uid+'&rev=eq.'+remote.rev,{data:JSON.parse(str),rev:remote.rev+1});
+    if(up&&up.length)mark(up[0].rev,str);
+  }catch(e){status('Sync problem: '+e.message,true)}
   finally{busy=false}
 }
-// push shortly after changes stop
-setInterval(()=>{const c=cfg();if(!c||busy)return;const h=hashOf(JSON.stringify(payload()));if(h===ls.get(HASH)){lastSeen=h;return}
+setInterval(()=>{if(!sess()||busy)return;const h=hashOf(JSON.stringify(payload()));if(h===ls.get(HASH)){lastSeen=h;return}
   if(h!==lastSeen){lastSeen=h;clearTimeout(timer);timer=setTimeout(()=>sync(false),4000)}},3000);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')sync(false)});
 document.addEventListener('click',async e=>{
-  if(e.target.closest('#syncConnect')){
-    const old=cfg(),tokIn=$('syncToken').value.trim(),c={owner:$('syncOwner').value.trim(),repo:$('syncRepo').value.trim(),path:($('syncPath').value.trim()||'command-center.json').replace(/^\/+/,''),token:tokIn&&!/^•+$/.test(tokIn)?tokIn:(old&&old.token)};
-    if(!c.owner||!c.repo||!c.token)return status('Fill in username, repository and token.',true);
-    status('Checking the repository…');
-    try{const r=await fetch(`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}`,{headers:{Authorization:'Bearer '+c.token,Accept:'application/vnd.github+json'}});
-      if(!r.ok)throw new Error(r.status===404?'Repository not found or the token cannot see it.':r.status===401?'The token was rejected.':'GitHub error '+r.status);
-      const info=await r.json();if(!info.private)return status('That repository is PUBLIC, so anyone could read your finances. Make it private (or create a new private one) and try again.',true);
-    }catch(err){return status(err.message,true)}
-    const changedTarget=!old||old.owner!==c.owner||old.repo!==c.repo||old.path!==c.path;
-    ls.set(CFG,JSON.stringify(c));if(changedTarget){ls.del(BASE);ls.del(HASH)}
-    paintCard();sync(true);return}
-  if(e.target.closest('#syncNow'))return sync(true);
-  if(e.target.closest('#syncOff')){if(confirm('Disconnect this device from GitHub? Your data stays in this browser and on GitHub.')){[CFG,BASE,HASH,LAST].forEach(ls.del);paintCard()}}
+  if(e.target.closest('#sbIn')){const email=$('sbEmail').value.trim(),pw=$('sbPass').value;if(!email||!pw)return status('Enter your email and password.',true);
+    status('Signing in…');try{const prev=sess(),se=await auth({email,password:pw},'password');$('sbPass').value='';if(!prev||prev.user.id!==se.user.id){ls.del(BASE);ls.del(HASH)}paint();sync(true)}catch(err){status(err.message,true)}return}
+  if(e.target.closest('#sbNow'))return sync(true);
+  if(e.target.closest('#sbOut')){if(!confirm('Sign out on this device? Your data stays in this browser and in the cloud.'))return;const se=sess();
+    try{if(se)await fetch(SB+'/auth/v1/logout',{method:'POST',headers:{apikey:KEY,Authorization:'Bearer '+se.access_token}})}catch(err){}
+    [SESS,BASE,HASH,LAST].forEach(ls.del);paint()}
 });
-paintCard();sync(false);
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='sbPass'||e.target.id==='sbEmail'))$('sbIn').click()});
+// clean up the earlier GitHub-sync settings if they were ever saved
+['cc.sync.cfg','cc.sync.sha'].forEach(ls.del);
+paint();sync(false);
 })();
 </script>
 </body>
