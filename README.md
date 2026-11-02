@@ -18,7 +18,7 @@ A single-file personal command center in a purple liquid-glass (iOS 26 inspired)
 
 ## Where data lives
 
-Plain static HTML. All data stays in the browser's `localStorage`; it does **not** sync between browsers or devices.
+Plain static HTML. Data lives in the browser's `localStorage` and, once you sign in under Settings → Cloud sync, is also kept in Supabase so it syncs between devices.
 
 - `garageFund.v5.1` — finance, targets, ideas, study plan, books (key name frozen so existing data and old backups keep working)
 - `studyCommandCenterV1` — Study Center
@@ -38,15 +38,13 @@ Use **Settings → Export JSON / Import JSON** to move data or recover from a wi
 - Imports are validated and refused with a specific message when the file is malformed.
 - `*.json` is git-ignored so exports never reach the repo.
 
-## GitHub sync (optional)
+## Cloud sync (Supabase)
 
-Settings → GitHub sync stores the whole data set as one JSON file in a **private** repository (the app refuses a public one) through the GitHub contents API, so every device you connect sees the same data.
+Settings → Cloud sync: sign in with your Supabase account (the `newbravuraerp` project's Auth). The whole data set (finance, planner, Study Center, without per-device UI state) is stored as one JSON row in `public.cc_personal_data`, protected by row level security so only the signed-in owner can read or write it; the anonymous role has no access.
 
-1. Create a new **private** repository, e.g. `command-center-data` (do not use the public app repo).
-2. Create a fine-grained token: GitHub → Settings → Developer settings → Fine-grained tokens → only that repository → Repository permissions → Contents: Read and write.
-3. In the app: Settings → GitHub sync → username, repository, token → Connect. Repeat on each device.
-
-Changes are pushed a few seconds after you stop editing. On start the newest copy is loaded; if two devices changed at once you choose which copy wins, and a raw snapshot (`garageFund.preSync.*`) is kept. The token is stored only in that browser.
+- First sign-in on a device with data uploads it; signing in on a new device loads it.
+- Changes are saved a few seconds after you stop editing. A newer cloud copy is loaded on start or when the tab is focused. If two devices changed at once you choose which copy wins, and a raw snapshot (`garageFund.preSync.*`) is kept.
+- Export / Import JSON still work as a manual backup.
 
 ## Run / deploy
 
