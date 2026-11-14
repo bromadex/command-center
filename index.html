@@ -437,6 +437,26 @@ tbody tr:last-child td{border-bottom:0}
 .mny-empty .material-symbols-outlined{font-size:38px;color:var(--cc-lav)}.mny-empty b{color:var(--cc-ink);font-size:17px}
 .mny-side{display:grid;gap:18px;align-self:start;position:sticky;top:92px}
 .mny-card{padding:20px;border-radius:var(--r-xl)}
+/* House project */
+.hse{display:grid;gap:18px}
+.hse-hero{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:20px;align-items:start}
+.hse-hero h2{font-size:24px;margin:0}.hse-hero .facts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.hse-hero .facts span{font-size:12.5px;padding:4px 10px;border-radius:99px;background:rgba(255,255,255,.08);border:1px solid var(--cc-line)}
+.hse-model{position:relative;border-radius:var(--r-lg,18px);overflow:hidden;border:1px solid var(--cc-line);background:#151b1f}
+.hse-model iframe{display:block;width:100%;height:min(70vh,620px);border:0}
+.hse-model .open{position:absolute;right:10px;bottom:10px}
+.hse-stage{display:grid;grid-template-columns:minmax(0,1.6fr) repeat(4,minmax(0,1fr)) auto;gap:6px 14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--cc-line);font-size:14px}
+.hse-stage:last-child{border-bottom:0}
+.hse-stage .nm b{display:block}.hse-stage .nm small{color:var(--cc-ink-2);font-size:12px}
+.hse-stage .num small{display:block;color:var(--cc-ink-2);font-size:11.5px;font-family:var(--font)}
+.hse-stage .cc-bar{grid-column:1/-1;height:6px}
+.hse-stage.head{font-size:11.5px;color:var(--cc-ink-2);text-transform:uppercase;letter-spacing:.06em;padding-top:0}
+.hse-acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.hse-doc{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--cc-line)}
+.hse-doc:last-child{border-bottom:0}.hse-doc .material-symbols-outlined{font-size:28px;color:var(--cc-lav)}
+.hse-sheet{display:block;width:100%;height:auto;border-radius:14px;background:#fff}
+@media (max-width:1100px){.hse-hero{grid-template-columns:1fr}}
+@media (max-width:760px){.hse-stage{grid-template-columns:minmax(0,1fr) auto}.hse-stage .num{grid-column:auto}.hse-stage.head{display:none}.hse-stage .hide-sm{display:none}}
 /* Rounds (ROSCA / club) */
 .rnd{display:grid;gap:18px}
 .rnd-card{display:grid;gap:16px}
@@ -760,6 +780,10 @@ tbody tr:last-child td{border-bottom:0}
       </form>
     </div>
     <div class="card" style="margin-top:16px" id="sheinCard"></div>
+  </section>
+
+  <section id="view-house" hidden>
+    <div class="hse" id="houseHost"></div>
   </section>
 
   <section id="view-rounds" hidden>
@@ -1310,6 +1334,7 @@ const Store = (() => {
     flips: [],
     sheinEarnings: [],
     rounds: [],
+    house: null,
     ui: { tab: 'ledger', ledgerFilter: 'all', budgetMonth: Utils.monthKey(Utils.todayISO()), showSettled: false, forecastDays: 30, ledgerPeriod: 'month' }
   };
   
@@ -1568,8 +1593,8 @@ const Render = (() => {
   }
 
   // ---------- Money page: balance hero, grouped timeline, insights ----------
-  const catGroup = c => /^Round: /.test(c) ? 'Round contributions' : /^Flip: /.test(c) ? 'Flip purchases' : /^Debt Settlement/.test(c) ? 'Debt settlements' : /^Target: /.test(c) ? 'Target spending' : (c || 'Uncategorised');
-  const originOf = c => /^Round( payout)?: /.test(c) ? 'Round' : /^Flip: /.test(c) ? 'Flip' : /^Debt Settlement/.test(c) ? 'Debt' : /^Target: /.test(c) ? 'Target' : '';
+  const catGroup = c => /^House: /.test(c) ? 'House building' : /^Round: /.test(c) ? 'Round contributions' : /^Flip: /.test(c) ? 'Flip purchases' : /^Debt Settlement/.test(c) ? 'Debt settlements' : /^Target: /.test(c) ? 'Target spending' : (c || 'Uncategorised');
+  const originOf = c => /^House: /.test(c) ? 'House' : /^Round( payout)?: /.test(c) ? 'Round' : /^Flip: /.test(c) ? 'Flip' : /^Debt Settlement/.test(c) ? 'Debt' : /^Target: /.test(c) ? 'Target' : '';
   const PERIODS = [['month', 'This month'], ['last', 'Last month'], ['3m', '3 months'], ['all', 'All time']];
   function periodRange(p) {
     const t = Utils.todayISO(), d = new Date(t + 'T00:00:00');
@@ -1836,7 +1861,7 @@ const Events = (() => {
   }
 
   // The shell (navigation) decides which view is visible; this just toggles the sections.
-  const VIEWS = ['ledger', 'analysis', 'people', 'rounds', 'flips', 'shein', 'settings'];
+  const VIEWS = ['ledger', 'analysis', 'people', 'rounds', 'house', 'flips', 'shein', 'settings'];
   function showTab(tab) {
     if (!VIEWS.includes(tab)) tab = 'ledger';   // e.g. a saved 'dashboard' or retired 'goal' tab
     VIEWS.forEach(v => { document.getElementById('view-' + v).hidden = (v !== tab); });
@@ -1895,7 +1920,7 @@ const Events = (() => {
     const catsFor = type => {
       const types = type === 'income' ? ['income'] : type === 'expense' ? ['expense'] : ['transfer_in', 'transfer_out'];
       const n = {};
-      Store.get().transactions.forEach(t => { if (types.includes(t.type) && t.category && !/^(Flip: |Debt Settlement|Target: |Round: |Round payout: )/.test(t.category)) n[t.category] = (n[t.category] || 0) + 1; });
+      Store.get().transactions.forEach(t => { if (types.includes(t.type) && t.category && !/^(Flip: |Debt Settlement|Target: |Round: |Round payout: |House: )/.test(t.category)) n[t.category] = (n[t.category] || 0) + 1; });
       return Object.entries(n).sort((a, b) => b[1] - a[1]).map(x => x[0]);
     };
     function syncUI() {
@@ -4013,6 +4038,7 @@ const SC_TABS=[['sc-dashboard','Study overview','dashboard'],['sc-pmp','PMP','mi
 const PAGES={
  overview:{label:'Overview',icon:'space_dashboard',el:'app-overview',sub:'Your money and progress at a glance'},
  money:{label:'Money',icon:'account_balance_wallet',el:'app-garage-fund',sub:'Everything coming in and going out',views:[['ledger','Transactions','receipt_long'],['analysis','Analysis','insights'],['shein','Shein affiliate','storefront']]},
+ house:{label:'House',icon:'home',el:'app-garage-fund',gf:'house',sub:'Stand 808, Denver: plan, budget and money spent'},
  rounds:{label:'Rounds',icon:'groups',el:'app-garage-fund',gf:'rounds',sub:'Your savings clubs: contributions and payouts'},
  debts:{label:'Debts',icon:'handshake',el:'app-garage-fund',gf:'people',sub:'Money owed to you and money you owe'},
  flips:{label:'Flips',icon:'inventory_2',el:'app-garage-fund',gf:'flips',sub:'Buy, receive, sell and measure profit'},
@@ -4023,9 +4049,9 @@ const PAGES={
  calculator:{label:'Calculator',icon:'calculate',el:'app-calculator',sub:'Quick arithmetic with history'},
  settings:{label:'Settings',icon:'settings',el:'app-garage-fund',gf:'settings',sub:'Backup, restore and data safety'}
 };
-const GROUPS=[['',['overview']],['Finance',['money','rounds','debts','flips','targets']],['Growth',['ideas','study','books']],['Tools',['calculator']]];
+const GROUPS=[['',['overview']],['Finance',['money','rounds','debts','flips','targets']],['Projects',['house']],['Growth',['ideas','study','books']],['Tools',['calculator']]];
 const PRIMARY=['overview','money','targets','study'];
-const MORE=['rounds','debts','flips','ideas','books','calculator','settings'];
+const MORE=['house','rounds','debts','flips','ideas','books','calculator','settings'];
 const EL_IDS=['app-overview','app-garage-fund','app-planner','app-study-center','app-calculator'];
 let cur={page:'overview',sub:''};
 
@@ -4056,6 +4082,7 @@ function go(page,sub,opts){
   if(page==='overview')renderOverview();
   if(page==='money'&&sub==='analysis')renderAnalysis();
   if(page==='rounds')renderRounds();
+  if(page==='house')renderHouse();else{const hm=document.getElementById('hseM');if(hm)hm.innerHTML=''}
   // titles + subnav
   let title=P.label,subt=P.sub;
   if(page==='study'&&sub==='plan'){subt=Planner.head('study')[1]}
@@ -4351,12 +4378,12 @@ function renderRounds(){
 function rndSaveRounds(rounds){Store.set({rounds});Render.all();renderRounds()}
 function rndAsk(title,fields,okLabel){return new Promise(res=>{
   const d=document.createElement('div');d.className='cc-sheet-scrim';
-  d.innerHTML=`<form class="cc-sheet" role="dialog" aria-modal="true" aria-label="${esc(title)}" style="display:grid;gap:12px"><h3>${esc(title)}</h3>${fields.map(f=>`<label style="display:grid;gap:5px;font-size:13px;color:var(--cc-ink-2)">${esc(f.label)}<input name="${f.name}" type="${f.type||'text'}" ${f.type==='number'?'step="0.01" min="0.01"':''} ${f.required?'required':''} value="${esc(f.value??'')}" placeholder="${esc(f.ph||'')}" ${f.list?`list="rndNames"`:''}></label>`).join('')}<datalist id="rndNames">${[...new Set((Store.get().rounds||[]).flatMap(r=>r.names||[]).filter(x=>x&&x!=='You'))].map(x=>`<option value="${esc(x)}">`).join('')}</datalist><div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn ghost" data-x>Cancel</button><button class="btn primary" type="submit">${esc(okLabel||'Save')}</button></div></form>`;
+  d.innerHTML=`<form class="cc-sheet" role="dialog" aria-modal="true" aria-label="${esc(title)}" style="display:grid;gap:12px"><h3>${esc(title)}</h3>${fields.map(f=>`<label style="display:grid;gap:5px;font-size:13px;color:var(--cc-ink-2)">${esc(f.label)}${f.options?`<select name="${f.name}">${f.options.map(([v,l])=>`<option value="${esc(v)}" ${String(v)===String(f.value)?'selected':''}>${esc(l)}</option>`).join('')}</select>`:`<input name="${f.name}" type="${f.type||'text'}" ${f.type==='number'?`step="${f.step||'0.01'}" min="${f.min??'0.01'}"${f.max!=null?` max="${f.max}"`:''}`:''} ${f.required?'required':''} value="${esc(f.value??'')}" placeholder="${esc(f.ph||'')}" ${f.list?`list="rndNames"`:''}>`}</label>`).join('')}<datalist id="rndNames">${[...new Set((Store.get().rounds||[]).flatMap(r=>r.names||[]).filter(x=>x&&x!=='You'))].map(x=>`<option value="${esc(x)}">`).join('')}</datalist><div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn ghost" data-x>Cancel</button><button class="btn primary" type="submit">${esc(okLabel||'Save')}</button></div></form>`;
   const close=v=>{d.remove();res(v)};
   d.addEventListener('click',e=>{if(e.target===d||e.target.closest('[data-x]'))close(null)});
   d.addEventListener('keydown',e=>{if(e.key==='Escape')close(null)});
   d.querySelector('form').addEventListener('submit',e=>{e.preventDefault();close(Object.fromEntries(new FormData(e.target)))});
-  document.body.appendChild(d);d.querySelector('input').focus();
+  document.body.appendChild(d);const fi=d.querySelector('input,select');if(fi)fi.focus();
 })}
 function rndSetName(r,i,name){const names=[...(r.names||[])];while(names.length<rndN(r))names.push('');names[i]=name;return (Store.get().rounds||[]).map(x=>x.id===r.id?{...x,names}:x)}
 document.addEventListener('submit',e=>{
@@ -4405,6 +4432,127 @@ document.addEventListener('click',async e=>{
   if(b=B('data-rnd-del')){const id=b.getAttribute('data-rnd-del');if(confirm('Delete this round? Its contributions and payouts stay in your ledger.'))rndSaveRounds((s.rounds||[]).filter(r=>r.id!==id));return}
 });
 
+/* ---------- House project (Stand 808): 3D model, drawings, budget by stage, money spent ----------
+   Stages live in Store.house. Spending is ordinary ledger expenses ("House: <stage>", houseStage id),
+   so the balance, Money page and Analysis all see it. Money already spent through Property targets
+   ("Target: <name>") is counted too, mapped to a stage by name. The bill of quantities is read from
+   the 3D model (same origin) and cached per device. */
+const HOUSE_MODEL='projects/stand808.html',HOUSE_PDF='projects/stand808-drawings.pdf';
+const HOUSE_BOQ_KEY='cc.house.boq';
+const HOUSE_DEFAULT=[
+ ['land','Stand, plans and approvals','Stand purchase, architect, council plan approval and fees',null],
+ ['found','Foundations','Setting out, trenches, footings, foundation brickwork, DPC','Foundations'],
+ ['slab','Floor slab','Fill, termite treatment, DPM, mesh and 85–100 mm slab','Floor slab'],
+ ['walls','Walls (superstructure)','Brickwork to wall plate, lintels, brickforce','Walls (superstructure)'],
+ ['roof','Roof','Rafters, purlins, IBR sheets, fascia, gutters, downpipes','Roof'],
+ ['ceil','Ceilings','Gypsum board, brandering, cornice','Ceilings'],
+ ['wd','Windows and doors','Window schedule W01, W02, NG11, PT69, TD678, NC11F, doors, garage door','Windows and doors'],
+ ['elec','Electrical installation','Board, wiring, points, compliance certificate','Electrical installation'],
+ ['plumb','Plumbing and drainage','Sanitary ware, geyser, water and sewer pipes, connection','Plumbing and drainage'],
+ ['fin','Finishes','Plaster, paint, floor and wall tiles, skirting','Finishes'],
+ ['ext','External works','Apron, paving, boundary wall, gates, water tank, solar','External works to the house']];
+const hseKeyword=[[/stand|land|plot|approval|plan/i,'land'],[/found|footing|trench/i,'found'],[/slab|floor/i,'slab'],[/wall|brick/i,'walls'],[/roof|ibr|truss/i,'roof'],[/ceil|gypsum/i,'ceil'],[/window|door/i,'wd'],[/solar|electric|wiring/i,'elec'],[/water|plumb|jojo|pump|geyser|sewer/i,'plumb'],[/til|paint|plaster|finish/i,'fin'],[/gate|fence|paving|driveway|external|boundary/i,'ext'],[/build/i,'walls']];
+function houseData(){const s=Store.get();if(s.house&&Array.isArray(s.house.stages))return s.house;
+  return{stages:HOUSE_DEFAULT.map(([id,name,desc,boq])=>({id,name,desc,boq,budgetCents:0,progress:0,note:''})),docs:[],started:''}}
+function houseSave(h){Store.set({house:h});Render.all();renderHouse()}
+let houseBoq=null;try{houseBoq=JSON.parse(localStorage.getItem(HOUSE_BOQ_KEY)||'null')}catch(e){}
+function houseReadBoq(){
+  const fr=document.getElementById('hseFrame');let w=null;try{w=fr&&fr.contentWindow}catch(e){}
+  if(!w||typeof w.STAND808_BOQ!=='function')return;
+  try{const secs=w.STAND808_BOQ();const total=secs.reduce((a,x)=>a+x.total,0);houseBoq={at:new Date().toISOString(),total:Math.round(total*100),sections:secs.map(x=>({name:x.name,cents:Math.round(x.total*100)}))};
+    try{localStorage.setItem(HOUSE_BOQ_KEY,JSON.stringify(houseBoq))}catch(e){}renderHouse()}catch(e){}
+}
+window.addEventListener('message',e=>{if(e.origin===location.origin&&e.data&&e.data.stand808boq){clearTimeout(window.__hseBoqT);window.__hseBoqT=setTimeout(houseReadBoq,600)}});
+const isHouseTarget=t=>/property|house|home|build/i.test((t.category||'')+' '+t.name)||hseKeyword.some(([r])=>r.test(t.name));
+const houseStageOf=(h,t)=>{if(t.houseStage&&h.stages.some(x=>x.id===t.houseStage))return t.houseStage;const nm=(t.category||'').replace(/^(House|Target): /,'');
+  const byName=h.stages.find(x=>x.name.toLowerCase()===nm.toLowerCase());if(byName)return byName.id;for(const[r,id]of hseKeyword)if(r.test(nm+' '+(t.note||''))&&h.stages.some(x=>x.id===id))return id;return h.stages[0].id};
+function houseSpending(s,h){
+  const P=Planner.summary(),prop=new Set(P.targets.filter(isHouseTarget).map(t=>t.name));
+  return s.transactions.filter(t=>t.type==='expense'&&(/^House: /.test(t.category)||t.houseStage||(/^Target: /.test(t.category)&&prop.has(t.category.slice(8))))).map(t=>({t,stage:houseStageOf(h,t),viaTarget:/^Target: /.test(t.category)}));
+}
+let houseTab='overview';
+function renderHouse(){
+  const host=document.getElementById('houseHost');if(!host)return;
+  const s=Store.get(),h=houseData(),P=Planner.summary(),spend=houseSpending(s,h);
+  const boqOf=st=>{if(!houseBoq||!st.boq)return 0;const x=houseBoq.sections.find(z=>z.name===st.boq);return x?x.cents:0};
+  const spentOf=id=>spend.filter(x=>x.stage===id).reduce((a,x)=>a+x.t.amountCents,0);
+  const budgetTot=h.stages.reduce((a,x)=>a+(x.budgetCents||0),0),spentTot=spend.reduce((a,x)=>a+x.t.amountCents,0);
+  const planTot=h.stages.reduce((a,x)=>a+(x.budgetCents||boqOf(x)),0);
+  const wsum=h.stages.reduce((a,x)=>a+(x.budgetCents||boqOf(x)||1),0),prog=Math.round(h.stages.reduce((a,x)=>a+(x.progress||0)*(x.budgetCents||boqOf(x)||1),0)/wsum);
+  const targets=P.targets.filter(isHouseTarget);
+  const saved=targets.reduce((a,t)=>a+Math.round((t.sv||0)*100),0);
+  const tabs=[['overview','Overview','space_dashboard'],['budget','Budget and stages','request_quote'],['spent','Money spent','receipt_long'],['plan','Plan and drawings','architecture']];
+  const tile=(k,v,sub,cls)=>`<div class="stat"><div class="k">${k}</div><div class="v ${cls||''}">${v}</div>${sub?`<small>${sub}</small>`:''}</div>`;
+  const tiles=`<div class="ana-tiles">
+    ${tile('Budget',budgetTot?fmt(budgetTot):'Not set',budgetTot?h.stages.filter(x=>x.budgetCents).length+' of '+h.stages.length+' stages budgeted':'Set budgets under Budget and stages')}
+    ${tile('Spent so far',fmt(spentTot),spend.length+' payment'+(spend.length===1?'':'s'),'neg')}
+    ${tile('Still needed',fmt(Math.max(0,planTot-spentTot)),planTot?'Budget (or estimate) minus spent':'Needs a budget or priced bill')}
+    ${tile('Estimate (bill of quantities)',houseBoq&&houseBoq.total?fmt(houseBoq.total):'–',houseBoq&&houseBoq.total?'From the 3D model, '+new Date(houseBoq.at).toLocaleDateString():'Open the model to read it')}
+    ${tile('Progress',prog+'%',`<span class="cc-bar" style="display:block;margin-top:6px"><i style="width:${prog}%"></i></span>`)}
+  </div>`;
+  const head=`<section class="card hse-hero"><div><div class="ov-eyebrow">Project</div><h2>Stand 808, Denver</h2><p class="muted" style="margin:6px 0 0">Three-bedroom house for Clement Mpala, Umguza RDC</p>
+     <div class="facts"><span>Floor area 144 m²</span><span>Footprint 8.0 × 18.0 m</span><span>Stand 10 × 25 m</span><span>Skillion roofs, IBR</span><span>3 bedrooms · 2 baths · carport</span><span>Architect: Trust Vunganai</span></div></div>
+     <div class="seg2" role="group" aria-label="House sections" style="justify-self:end">${tabs.map(([k,l,i])=>`<button data-hse-tab="${k}" aria-pressed="${k===houseTab}">${mi(i)} ${l}</button>`).join('')}</div></section>`;
+  const model=`<section class="card"><div class="ov-head"><h2>3D model</h2><a class="ov-link" href="${HOUSE_MODEL}" target="_blank" rel="noopener">Open full screen</a></div>
+     <div class="hse-model"><iframe id="hseFrame" src="${HOUSE_MODEL}" title="3D model of the house" loading="lazy" allow="fullscreen"></iframe></div>
+     <p class="muted" style="font-size:12.5px;margin:10px 0 0">Drag to orbit. Use Cutaway or Plan to see the rooms, and <b>Bill of quantities</b> in the model to price materials; the estimate here updates from it.</p></section>`;
+  const stageRows=h.stages.map(st=>{const b=st.budgetCents||0,est=boqOf(st),sp=spentOf(st.id),base=b||est,left=base-sp,pct=base?Math.min(100,sp/base*100):0;
+    return `<div class="hse-stage"><span class="nm"><b>${esc(st.name)}</b><small>${esc(st.note||st.desc||'')}</small></span>
+      <span class="num hide-sm">${b?fmt(b):'–'}<small>budget</small></span><span class="num hide-sm">${est?fmt(est):'–'}<small>estimate</small></span>
+      <span class="num">${fmt(sp)}<small>spent${base?' of '+fmt(base):''}</small></span><span class="num hide-sm ${base&&left<0?'neg':''}">${base?(left<0?'−':'')+fmt(Math.abs(left)):'–'}<small>${base&&left<0?'over':'left'}</small></span>
+      <span class="hse-acts"><span class="tag">${st.progress||0}% done</span><button class="btn small" data-hse-pay="${st.id}">${mi('add')}Spend</button><button class="btn ghost small" data-hse-stage="${st.id}">Edit</button></span>
+      <span class="cc-bar ${left<0?'bad':''}"><i style="width:${Math.max(st.progress||0,0)}%"></i></span></div>`}).join('');
+  const budget=`<section class="card"><div class="ov-head"><h2>Budget and stages</h2><span class="hse-acts">${houseBoq&&houseBoq.total?`<button class="btn ghost small" data-hse-useboq>Use estimates as budgets</button>`:''}<button class="btn ghost small" data-hse-addstage>${mi('add')}Add stage</button></span></div>
+     <div class="hse-stage head"><span>Stage</span><span>Budget</span><span>Estimate</span><span>Spent</span><span>Left</span><span></span></div>${stageRows}
+     <p class="muted" style="font-size:12.5px;margin:12px 0 0">Bar = how far the work is. Estimates come from the model's bill of quantities with your prices; set your own budget per stage with Edit.</p></section>`;
+  const list=[...spend].sort((a,b)=>b.t.date.localeCompare(a.t.date));
+  const spent=`<section class="card"><div class="ov-head"><h2>Money spent</h2><button class="btn primary small" data-hse-pay="">${mi('add')}Record spending</button></div>
+     ${list.length?`<div class="ana-list">${list.map(({t,stage,viaTarget})=>`<div class="ana-row"><span>${esc((h.stages.find(x=>x.id===stage)||{}).name||'House')}${viaTarget?' <em class="tl-tag">Target</em>':''}<small>${t.date}${t.note?' · '+esc(t.note):''}${viaTarget?' · '+esc(t.category):''}</small></span><span class="hse-acts" style="align-items:center"><b class="num neg">−${fmt(t.amountCents)}</b>${viaTarget?'':`<button class="icon" data-edit="transactions" data-id="${t.id}" aria-label="Edit"><span class="material-symbols-outlined">edit</span></button><button class="icon" data-del="transactions" data-id="${t.id}" aria-label="Delete"><span class="material-symbols-outlined">delete</span></button>`}</span></div>`).join('')}</div>`:'<div class="empty">Nothing spent on the house yet. Record each payment (materials, labour, fees) and it also goes into your ledger.</div>'}
+     <p class="muted" style="font-size:12.5px;margin:12px 0 0">Spending from your Property targets (for example Stand Buying) is included automatically.</p></section>`;
+  const fund=`<section class="card"><div class="ov-head"><h2>Saving toward the house</h2><button class="ov-link" data-go="targets">Open targets</button></div>
+     ${targets.length?`<div class="ana-list">${targets.map(t=>`<div><div class="ana-dow"><span>${esc(t.name)}</span><b class="num">${P.cur}${(t.fd||0).toLocaleString(undefined,{maximumFractionDigits:2})}${t.goal?' / '+P.cur+t.goal.toLocaleString():''}</b></div><div class="cc-bar" style="margin-top:4px"><i style="width:${t.goal?Math.max(2,t.pct):0}%;background:${t.color||''}"></i></div><small class="muted">${t.goal?Math.round(t.pct)+'% funded':'No goal set'}${t.deadline?' · by '+t.deadline:''}</small></div>`).join('')}</div><p class="muted" style="font-size:12.5px;margin:12px 0 0">Set aside in targets: ${fmt(saved)} (an earmark, still part of your balance).</p>`:'<div class="empty">No Property targets yet.</div>'}</section>`;
+  const docs=`<section class="card"><div class="ov-head"><h2>Drawings and documents</h2><button class="btn ghost small" data-hse-adddoc>${mi('add')}Add link</button></div>
+     <div class="hse-doc">${mi('picture_as_pdf')}<span><b>Approved plan set</b><small class="muted" style="display:block">Floor plan, elevations, section S243, site plan, slab and fill details, window and door schedule · Trust Vunganai (OAC/ACZ 337)</small></span><a class="btn small" href="${HOUSE_PDF}" target="_blank" rel="noopener">Open</a></div>
+     <div class="hse-doc">${mi('view_in_ar')}<span><b>3D model with bill of quantities</b><small class="muted" style="display:block">Walk-through, cutaway, plan view, sun study and priced bill</small></span><a class="btn small" href="${HOUSE_MODEL}" target="_blank" rel="noopener">Open</a></div>
+     ${(h.docs||[]).map(d=>`<div class="hse-doc">${mi('link')}<span><b>${esc(d.title)}</b><small class="muted" style="display:block">${esc(d.note||d.url)}</small></span><span class="hse-acts"><a class="btn small" href="${esc(d.url)}" target="_blank" rel="noopener">Open</a><button class="icon" data-hse-deldoc="${d.id}" aria-label="Remove"><span class="material-symbols-outlined">delete</span></button></span></div>`).join('')}</section>`;
+  const pdf=`<section class="card"><div class="ov-head"><h2>Plan set</h2><a class="ov-link" href="${HOUSE_PDF}" target="_blank" rel="noopener">Open PDF</a></div><a href="${HOUSE_PDF}" target="_blank" rel="noopener" title="Open the full-resolution PDF"><img class="hse-sheet" src="projects/stand808-drawings.jpg" alt="Plan set for the house: floor plan, four elevations, section, site plan, slab and fill details, window and door schedule" loading="lazy"></a><p class="muted" style="font-size:12.5px;margin:10px 0 0">Tap the drawing to open the full PDF and zoom in.</p></section>`;
+  let body='';
+  if(houseTab==='overview')body=`<div class="ov-grid2">${fund}${spent.replace('<h2>Money spent</h2>','<h2>Recent spending</h2>')}</div>`;
+  else if(houseTab==='budget')body=budget;
+  else if(houseTab==='spent')body=`<div class="ov-grid2">${spent}${fund}</div>`;
+  else body=docs+pdf;
+  // The model element is kept between re-renders on the same tab so it doesn't reload.
+  if(!host.querySelector('#hseA')){host.innerHTML='<div id="hseA" class="hse"></div><div id="hseM"></div><div id="hseB" class="hse"></div>'}
+  host.querySelector('#hseA').innerHTML=head+tiles;
+  host.querySelector('#hseB').innerHTML=body;
+  const m=host.querySelector('#hseM'),showM=houseTab==='overview'||houseTab==='plan';
+  // The 3D model runs a render loop, so it is only loaded while it is on screen.
+  if(showM&&!m.firstChild){m.innerHTML=model;host.querySelector('#hseFrame').addEventListener('load',()=>setTimeout(houseReadBoq,300))}
+  if(!showM)m.innerHTML='';
+}
+document.addEventListener('click',async e=>{
+  const B=a=>e.target.closest('['+a+']');let b;
+  if(b=B('data-hse-tab')){houseTab=b.dataset.hseTab;renderHouse();return}
+  if(b=B('data-hse-pay')){const h=houseData(),id=b.dataset.hsePay||h.stages[0].id;
+    const v=await rndAsk('Record house spending',[{name:'stage',label:'Stage',options:h.stages.map(x=>[x.id,x.name]),value:id},{name:'what',label:'What was it for (supplier, item, labour)',ph:'e.g. 30 bags cement, Bhola Hardware'},{name:'date',label:'Date paid',type:'date',required:1,value:Utils.todayISO()},{name:'amount',label:'Amount',type:'number',required:1}],'Record');
+    if(!v)return;const st=h.stages.find(x=>x.id===v.stage),amt=Utils.toCents(v.amount);if(!st||!amt)return;
+    if(!Store.get().house)Store.set({house:h});
+    Store.add('transactions',{id:Utils.uid(),type:'expense',date:v.date,category:'House: '+st.name,amountCents:amt,note:(v.what||'').trim(),recurring:'',nextDueDate:null,houseStage:st.id});Render.all();renderHouse();return}
+  if(b=B('data-hse-stage')){const h=houseData(),st=h.stages.find(x=>x.id===b.dataset.hseStage);if(!st)return;
+    const v=await rndAsk('Edit stage',[{name:'name',label:'Stage name',required:1,value:st.name},{name:'budget',label:'Budget',type:'number',min:0,value:st.budgetCents?Utils.fromCents(st.budgetCents):''},{name:'progress',label:'Work done (%)',type:'number',step:1,min:0,max:100,value:st.progress||0},{name:'note',label:'Note',value:st.note||'',ph:'e.g. builder quote from …'}],'Save');
+    if(!v)return;const stages=h.stages.map(x=>x.id===st.id?{...x,name:v.name.trim()||x.name,budgetCents:Utils.toCents(v.budget||0),progress:Math.max(0,Math.min(100,parseInt(v.progress)||0)),note:v.note.trim()}:x);
+    // keep ledger category names in step with a renamed stage
+    if(v.name.trim()&&v.name.trim()!==st.name)Store.set({transactions:Store.get().transactions.map(t=>t.houseStage===st.id?{...t,category:'House: '+v.name.trim()}:t)});
+    houseSave({...h,stages});return}
+  if(B('data-hse-addstage')){const h=houseData();const v=await rndAsk('Add stage',[{name:'name',label:'Stage name',required:1,ph:'e.g. Septic tank'},{name:'budget',label:'Budget',type:'number',min:0}],'Add');if(!v)return;
+    houseSave({...h,stages:[...h.stages,{id:Utils.uid(),name:v.name.trim(),desc:'',boq:null,budgetCents:Utils.toCents(v.budget||0),progress:0,note:''}]});return}
+  if(B('data-hse-useboq')){const h=houseData();if(!houseBoq)return;if(!confirm('Set each stage budget to its bill-of-quantities estimate? Stages without an estimate keep their budget.'))return;
+    houseSave({...h,stages:h.stages.map(x=>{const e2=x.boq&&houseBoq.sections.find(z=>z.name===x.boq);return e2&&e2.cents?{...x,budgetCents:e2.cents}:x})});return}
+  if(B('data-hse-adddoc')){const h=houseData();const v=await rndAsk('Add a document link',[{name:'title',label:'Title',required:1,ph:'e.g. Builder quote'},{name:'url',label:'Link (Google Drive, Dropbox, …)',type:'url',required:1},{name:'note',label:'Note'}],'Add');if(!v)return;
+    houseSave({...h,docs:[...(h.docs||[]),{id:Utils.uid(),title:v.title.trim(),url:v.url.trim(),note:(v.note||'').trim()}]});return}
+  if(b=B('data-hse-deldoc')){const h=houseData();if(confirm('Remove this link?'))houseSave({...h,docs:(h.docs||[]).filter(d=>d.id!==b.dataset.hseDeldoc)});return}
+});
+
 /* ---------- Money → Analysis: how the money is being used ---------- */
 const ANA_P=[['month','This month'],['last','Last month'],['3m','3 months'],['6m','6 months'],['12m','12 months'],['all','All time']];
 const isoOf=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -4422,6 +4570,7 @@ const CAT_IN=[
  [/^debt settlement|repaid|paid back/i,'Debts repaid to you','repaid'],
  [/borrow|loan/i,'Borrowed money','borrowed']];
 const CAT_OUT=[
+ [/^house: /i,'House building','invest'],
  [/^round: /i,'Round contributions','roundout'],
  [/^debt settlement|\|\s*debt\b/i,'Debt repayments','debt'],
  [/^target: /i,'Savings & property','invest'],
@@ -4588,7 +4737,7 @@ document.addEventListener('click',e=>{
   const p=e.target.closest('[data-anap]');if(p){ls.set('cc.ana.period',p.dataset.anap);renderAnalysis();return}
 });
 
-window.CC={go,refresh(){badges();if(cur.page==='overview')renderOverview();if(cur.page==='money'&&cur.sub==='analysis')renderAnalysis();if(cur.page==='rounds')renderRounds()},badges};
+window.CC={go,refresh(){badges();if(cur.page==='overview')renderOverview();if(cur.page==='money'&&cur.sub==='analysis')renderAnalysis();if(cur.page==='rounds')renderRounds();if(cur.page==='house')renderHouse()},badges};
 
 buildNav();
 setCollapsed(ls.get('cc.collapsed')==='1');
