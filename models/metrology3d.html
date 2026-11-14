@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Metrology 3D models</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#100C18;--ink:#F8F5FF;--ink2:#BDB3CC;--lav:#D7BEFF;--line:rgba(255,255,255,.17);color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:14px/1.4 Figtree,system-ui,sans-serif;overflow:hidden}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none}
+#labels{position:fixed;inset:0;pointer-events:none}
+.lb{position:absolute;transform:translate(-50%,-100%);padding:3px 8px;border-radius:8px;background:rgba(20,12,36,.82);border:1px solid var(--line);font-size:12px;white-space:nowrap;color:var(--ink)}
+.lb::after{content:"";position:absolute;left:50%;top:100%;width:1px;height:10px;background:rgba(215,190,255,.7)}
+.bar{position:fixed;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));display:flex;gap:8px;flex-wrap:wrap;justify-content:center;pointer-events:none}
+.bar button{pointer-events:auto;font:600 13px Figtree,sans-serif;color:var(--ink);background:rgba(255,255,255,.12);border:1px solid var(--line);border-radius:99px;padding:9px 14px;cursor:pointer;backdrop-filter:blur(10px)}
+.bar button[aria-pressed=true]{background:linear-gradient(155deg,#B88BFF,#8054E8);border-color:transparent}
+.title{position:fixed;left:14px;top:max(12px,env(safe-area-inset-top));max-width:min(420px,calc(100% - 28px));padding:10px 14px;border-radius:14px;background:rgba(20,12,36,.72);border:1px solid var(--line);backdrop-filter:blur(10px)}
+.title b{display:block;font-size:16px}.title small{color:var(--ink2)}
+#fail{position:fixed;inset:0;display:grid;place-content:center;text-align:center;padding:20px}
+#fail[hidden],[hidden]{display:none !important}
+</style>
+</head>
+<body>
+<canvas id="c" aria-label="3D model. Drag to turn, scroll or pinch to zoom."></canvas>
+<div id="labels" aria-hidden="true"></div>
+<div class="title"><b id="tt">3D model</b><small id="ts">Drag to turn · pinch or scroll to zoom</small></div>
+<div class="bar" id="bar"></div>
+<div id="fail" hidden><p>The 3D library didn't load. Check your connection and reload.</p></div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+'use strict';
+if(!window.THREE||!THREE.OrbitControls){document.getElementById('fail').hidden=false;return}
+const which=(location.hash.replace('#','')||'lever').split('&')[0];
+const canvas=document.getElementById('c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));renderer.setSize(innerWidth,innerHeight);
+renderer.outputEncoding=THREE.sRGBEncoding;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x15101f);
+const camera=new THREE.PerspectiveCamera(40,innerWidth/innerHeight,0.05,200);
+const controls=new THREE.OrbitControls(camera,canvas);controls.enableDamping=true;controls.dampingFactor=.08;
+scene.add(new THREE.HemisphereLight(0xe8e0ff,0x2a2038,.75));
+const sun=new THREE.DirectionalLight(0xffffff,.9);sun.position.set(4,8,5);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);
+Object.assign(sun.shadow.camera,{left:-6,right:6,top:6,bottom:-6});scene.add(sun);
+const floor=new THREE.Mesh(new THREE.CircleGeometry(12,64),new THREE.MeshStandardMaterial({color:0x221a33,roughness:1}));
+floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);
+const mat=(c,o)=>new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:.55,metalness:.25},o||{}));
+function mesh(g,m,x,y,z,p){const o=new THREE.Mesh(g,m);o.position.set(x||0,y||0,z||0);o.castShadow=o.receiveShadow=true;(p||scene).add(o);return o}
+const box=(w,h,d)=>new THREE.BoxGeometry(w,h,d);
+const LBL=[];const host=document.getElementById('labels');
+function label(text,obj,off){const el=document.createElement('div');el.className='lb';el.textContent=text;host.appendChild(el);LBL.push({el,obj,off:off||new THREE.Vector3(0,.15,0)});return el}
+function updateLabels(){const v=new THREE.Vector3();LBL.forEach(l=>{l.obj.getWorldPosition(v);v.add(l.off);v.project(camera);const vis=v.z<1&&l.obj.visible!==false&&(!l.obj.parent||l.obj.parent.visible!==false);l.el.style.display=vis&&showLabels?'':'none';l.el.style.left=((v.x+1)/2*innerWidth)+'px';l.el.style.top=((1-v.y)/2*innerHeight)+'px'})}
+let showLabels=true;const bar=document.getElementById('bar');
+function btn(text,fn,pressed){const b=document.createElement('button');b.textContent=text;if(pressed!==undefined)b.setAttribute('aria-pressed',pressed);b.onclick=()=>fn(b);bar.appendChild(b);return b}
+const set=(t,s)=>{document.getElementById('tt').textContent=t;document.getElementById('ts').textContent=s;document.title=t};
+let tick=()=>{};
+
+/* ===== 1. Lever platform scale ===== */
+if(which==='lever'){
+  set('Lever platform scale','Weight on the platform → knife edges → levers → steelyard. Press Weigh.');
+  camera.position.set(4.2,3.1,4.6);controls.target.set(0,.7,0);
+  const steel=mat(0x9aa3b0,{metalness:.7,roughness:.35}),blue=mat(0x3b5a8a),dark=mat(0x2a2d34),gold=mat(0xd8b46a,{metalness:.8,roughness:.3}),edge=mat(0xff9a6b,{metalness:.6,roughness:.3});
+  mesh(box(3.2,.12,2.2),dark,0,.06,0); // base frame
+  const plat=new THREE.Group();scene.add(plat);
+  const top=mesh(box(2.8,.08,1.9),mat(0x6d7f99,{roughness:.6}),0,.62,0,plat);
+  // platform knife edges (load pivots) at 4 corners
+  const kn=[];[[-1.15,-.75],[1.15,-.75],[-1.15,.75],[1.15,.75]].forEach(([x,z])=>{const k=mesh(new THREE.ConeGeometry(.06,.14,3),edge,x,.5,z,plat);k.rotation.x=Math.PI;kn.push(k)});
+  // two main levers (long + short) as V shapes converging to the nose
+  const levers=new THREE.Group();scene.add(levers);
+  const lever=(x1,z1,x2,z2,y)=>{const dx=x2-x1,dz=z2-z1,len=Math.hypot(dx,dz);const m=mesh(box(len,.07,.09),blue,(x1+x2)/2,y,(z1+z2)/2,levers);m.rotation.y=-Math.atan2(dz,dx);return m};
+  const L1=lever(-1.15,-.75,1.25,0,.38),L1b=lever(-1.15,.75,1.25,0,.38);
+  const L2=lever(1.15,-.75,.55,0,.3),L2b=lever(1.15,.75,.55,0,.3);
+  [[-1.25,-.75],[-1.25,.75],[1.25,-.75],[1.25,.75]].forEach(([x,z])=>{const f=mesh(new THREE.ConeGeometry(.07,.16,3),gold,x,.2,z)}); // fulcrum stands
+  const nose=mesh(new THREE.SphereGeometry(.07,16,12),edge,1.3,.38,0,levers);
+  // pillar + connecting rod + steelyard
+  mesh(box(.16,1.9,.16),dark,1.55,1.05,0);
+  const rod=mesh(new THREE.CylinderGeometry(.025,.025,1.5,12),steel,1.3,1.12,0);
+  const yard=new THREE.Group();yard.position.set(1.55,2.05,0);scene.add(yard);
+  mesh(box(1.9,.07,.06),steel,.55,0,0,yard);
+  for(let i=0;i<=10;i++)mesh(box(.012,.05,.07),dark,-.25+i*.16,.05,0,yard);
+  const poise=mesh(box(.14,.16,.12),gold,-.2,-.01,0,yard);
+  const bbox=mesh(box(.14,.14,.14),dark,-.42,0,0,yard);
+  mesh(new THREE.ConeGeometry(.06,.12,3),edge,0,-.08,0,yard).rotation.x=Math.PI;
+  const load=mesh(box(.7,.5,.6),mat(0xc98a4b,{roughness:.8}),0,3,0);load.visible=false;
+  label('Platform',top,new THREE.Vector3(-.9,.12,.6));label('Load knife edges',kn[0],new THREE.Vector3(0,.05,0));
+  label('Long lever',L1,new THREE.Vector3(-.2,.1,-.1));label('Short lever',L2,new THREE.Vector3(0,.1,0));
+  label('Nose (lever tip)',nose);label('Connecting rod',rod,new THREE.Vector3(0,-.2,0));
+  label('Steelyard',yard,new THREE.Vector3(.9,.15,0));label('Travelling poise',poise);label('Balance box (zero)',bbox,new THREE.Vector3(-.15,-.32,0));
+  let t=-1,cut=false;
+  btn('Weigh',()=>{t=0;load.visible=true});
+  btn('Hide platform',b=>{cut=!cut;top.visible=!cut;b.setAttribute('aria-pressed',cut);b.textContent=cut?'Show platform':'Hide platform'},false);
+  btn('Labels',b=>{showLabels=!showLabels;b.setAttribute('aria-pressed',showLabels)},true);
+  tick=dt=>{if(t<0)return;t+=dt;
+    const drop=Math.min(1,t/1.2),y=3-(3-0.91)*drop*drop;load.position.y=y;
+    const press=t>1.2?Math.min(1,(t-1.2)/.4):0, settle=t>2.2?Math.min(1,(t-2.2)/1.6):0;
+    plat.position.y=-.035*press*(1-settle);levers.rotation.z=-.02*press*(1-settle);
+    yard.rotation.z=.12*press*(1-settle);poise.position.x=-.2+1.45*settle;
+    if(t>5)t=-1};
+}
+
+/* ===== 2. Traceability ladder ===== */
+if(which==='ladder'){
+  set('The traceability ladder','Each step is calibrated against the step above it. Uncertainty grows as you go down.');
+  camera.position.set(5.5,4.2,6.5);controls.target.set(0,1.4,0);
+  const steps=[['SI kilogram (BIPM)','Defined by the Planck constant',0xffd36e],['National standard','SIRDC National Metrology Institute',0xb88bff],['Local standards','Trade Measures reference sets',0x8fb9e0],['Working standards','Inspectors\' test weights',0x7fe3b4],['Trade equipment','Shop scales, weighbridges',0xff9a8e]];
+  steps.forEach(([a,b,c],i)=>{const h=(5-i)*.62,w=1.15;const s=mesh(box(w,h,1.6),mat(c,{roughness:.6,metalness:.1}),-2.3+i*w,h/2,0);
+    const k=mesh(new THREE.SphereGeometry(.001),mat(0),0,h/2,0,s);label((i+1)+'. '+a+' · '+b,k,new THREE.Vector3(0,.12,0));
+    if(i<4){const arr=mesh(new THREE.ConeGeometry(.09,.25,12),mat(0xffffff,{emissive:0x664499}),-2.3+i*w+w/2,h-.25,0);arr.rotation.z=-Math.PI/2.6}});
+  btn('Labels',b=>{showLabels=!showLabels;b.setAttribute('aria-pressed',showLabels)},true);
+}
+
+/* ===== 3. Test weights ===== */
+if(which==='weights'){
+  set('Test weights','Cylindrical, hexagonal and rectangular (block) weights. Cutaway shows the sealed adjusting hole.');
+  camera.position.set(3.6,2.4,4.2);controls.target.set(0,.45,0);
+  const iron=mat(0x3d4148,{roughness:.8,metalness:.4}),brass=mat(0xc9a24a,{metalness:.85,roughness:.28}),lead=mat(0x8b9097,{metalness:.5,roughness:.6}),ss=mat(0xd6dbe1,{metalness:.9,roughness:.18});
+  const g=new THREE.Group();scene.add(g);
+  const cyl=(r,h,x,m,name)=>{const body=mesh(new THREE.CylinderGeometry(r,r,h,48),m,x,h/2,0,g);const knob=mesh(new THREE.CylinderGeometry(r*.38,r*.45,r*.5,32),m,x,h+r*.22,0,g);mesh(new THREE.SphereGeometry(r*.4,24,16),m,x,h+r*.5,0,g);label(name,knob,new THREE.Vector3(0,r*.5,0));return body};
+  cyl(.12,.24,-1.5,ss,'100 g · stainless steel');cyl(.17,.34,-1.0,brass,'1 kg · brass');
+  const big=cyl(.26,.52,-.3,brass,'5 kg · cylindrical with knob');
+  const hex=mesh(new THREE.CylinderGeometry(.2,.2,.24,6),iron,.45,.12,.0,g);mesh(new THREE.CylinderGeometry(.08,.1,.1,16),iron,.45,.28,0,g);label('500 g · hexagonal (iron)',hex,new THREE.Vector3(0,.3,0));
+  const block=mesh(box(.9,.38,.42),iron,1.5,.19,0,g);
+  const handle=mesh(new THREE.TorusGeometry(.18,.035,12,32,Math.PI),iron,1.5,.38,0,g);
+  label('20 kg · rectangular block (cast iron)',handle,new THREE.Vector3(0,.25,0));
+  // adjusting cavity with lead plug, visible when cut away
+  const cavity=mesh(new THREE.CylinderGeometry(.08,.08,.22,24),mat(0x111111),1.5,.2,.12,g);const plug=mesh(new THREE.CylinderGeometry(.08,.08,.05,24),lead,1.5,.33,.12,g);
+  cavity.visible=plug.visible=false;label('Adjusting hole · sealed with lead (stamp goes on the lead)',plug,new THREE.Vector3(0,.1,0));
+  let cut=false;
+  btn('Cutaway',b=>{cut=!cut;block.material=cut?mat(0x3d4148,{transparent:true,opacity:.28}):iron;cavity.visible=plug.visible=cut;b.setAttribute('aria-pressed',cut)},false);
+  btn('Labels',b=>{showLabels=!showLabels;b.setAttribute('aria-pressed',showLabels)},true);
+  big.userData.spin=true;
+}
+
+let last=performance.now();
+function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;tick(dt);controls.update();renderer.render(scene,camera);updateLabels();requestAnimationFrame(frame)}
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
