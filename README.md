@@ -12,7 +12,7 @@ A single-file personal command center in a purple liquid-glass (iOS 26 inspired)
 | **Flips** | Inventory, purchases, sales, realized vs projected profit |
 | **Targets** | Flexible goals; allocate money as a planning earmark |
 | **Ideas** | Idea board with status, priority, category, tags; turn an idea into a target |
-| **Study** | Weekly plan plus the Study Center (PMP, PTE, CODESYS, Bible, Reading log, To-Do) |
+| **Study** | Weekly plan plus the Study Center (PMP, PTE, Mass Metrology with Trade Measures Zimbabwe, CODESYS, Bible, Reading log, To-Do) |
 | **Books** | Books with status/progress and important notes (title, insight, details, chapter/page, tags) |
 | **Calculator** | Arithmetic with history and keyboard support |
 | **Settings** | Starting balance, full export/import, study-only backup, danger zone |

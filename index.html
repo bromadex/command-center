@@ -926,7 +926,7 @@ tbody tr:last-child td{border-bottom:0}
   <!-- ============ DASHBOARD ============ -->
   <section id="view-sc-dashboard">
     <div id="dashAlerts"></div>
-    <div class="grid five" id="examGauges"></div>
+    <div class="grid three" id="examGauges"></div>
     <div class="grid three" style="margin-top:16px">
       <div class="card">
         <h3><span class="dot"></span>CODESYS Progress</h3>
@@ -973,6 +973,32 @@ tbody tr:last-child td{border-bottom:0}
       <div class="row" style="margin-top:10px">
         <input data-exam-newmilestone="pmp" placeholder="Add a milestone…"/>
         <button class="btn ghost small" data-exam-addmilestone="pmp" style="flex:0 0 auto; min-width:auto"><span class="material-symbols-outlined">add</span></button>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-sc-metro" style="display:none">
+    <div class="section-title"><h2>Mass Metrology</h2><span class="sub">Trade Measures Zimbabwe · target date and course milestones</span></div>
+    <div class="grid two">
+      <div class="card">
+        <h3><span class="dot"></span>Progress</h3>
+        <div id="metroProgress"></div>
+      </div>
+      <div class="card">
+        <h3><span class="dot"></span>Target date (exam or certificate)</h3>
+        <div class="row">
+          <div><input type="date" data-exam-date="metro" id="metroDateInput"/></div>
+        </div>
+        <label style="margin-top:14px">Notes</label>
+        <textarea rows="3" data-exam-notes="metro" id="metroNotes"></textarea>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h3><span class="dot"></span>Milestones</h3>
+      <div id="metroMilestoneList"></div>
+      <div class="row" style="margin-top:10px">
+        <input data-exam-newmilestone="metro" placeholder="Add a milestone…"/>
+        <button class="btn ghost small" data-exam-addmilestone="metro" style="flex:0 0 auto; min-width:auto"><span class="material-symbols-outlined">add</span></button>
       </div>
     </div>
   </section>
@@ -2671,6 +2697,17 @@ Render.all();
           {id:Utils.uid(), text:'Review scored feedback / weak items', done:false},
           {id:Utils.uid(), text:'Timed full mock test #2 (target score)', done:false},
           {id:Utils.uid(), text:'Book official exam slot', done:false},
+        ]},
+        metro: { name:'Mass Metrology', provider:'Trade Measures Zimbabwe', targetDate:'', notes:'Course run through Trade Measures Zimbabwe. Edit the milestones to match the official course outline.', milestones: [
+          {id:Utils.uid(), text:'Enrol with Trade Measures Zimbabwe and get the course outline and dates', done:false},
+          {id:Utils.uid(), text:'Metrology basics: SI units, the kilogram, traceability and the national standards', done:false},
+          {id:Utils.uid(), text:'Legal metrology: the Trade Measures Act, verification, stamping and offences', done:false},
+          {id:Utils.uid(), text:'Weights: OIML R111 accuracy classes, maximum permissible errors, handling and care', done:false},
+          {id:Utils.uid(), text:'Weighing instruments: OIML R76 classes, verification scale interval, eccentricity, repeatability, linearity tests', done:false},
+          {id:Utils.uid(), text:'Calibration of weights by comparison (ABBA / ABA cycles) and air buoyancy correction', done:false},
+          {id:Utils.uid(), text:'Measurement uncertainty: Type A and B, budgets, expanded uncertainty and certificates', done:false},
+          {id:Utils.uid(), text:'Practical: verify a scale and calibrate a set of weights', done:false},
+          {id:Utils.uid(), text:'Assessment / exam and certificate', done:false},
         ]}
       },
       codesys: {
@@ -2684,7 +2721,7 @@ Render.all();
         bible: { completed: 0, log: [] }
       },
       todos: {
-        categories: ['PMP','PTE Academic','CODESYS','Reading','Work','Hobbies','Other'],
+        categories: ['PMP','PTE Academic','Mass Metrology','CODESYS','Reading','Work','Hobbies','Other'],
         tasks: []
       },
       ui: { tab: 'dashboard' }
@@ -2700,6 +2737,9 @@ Render.all();
         const parsed = JSON.parse(raw);
         // shallow-merge defaults for any missing top-level keys (forward compatibility)
         const base = defaultData();
+        if(parsed.todos&&Array.isArray(parsed.todos.categories)&&!parsed.todos.categories.includes('Mass Metrology')){
+          const i=parsed.todos.categories.indexOf('PTE Academic');parsed.todos.categories.splice(i>=0?i+1:0,0,'Mass Metrology');
+        }
         return Object.assign({}, base, parsed, {
           exams: Object.assign({}, base.exams, parsed.exams),
           codesys: Object.assign({}, base.codesys, parsed.codesys),
@@ -2770,7 +2810,7 @@ Render.all();
       if(!lastLog || lastLog.date !== today){
         alerts.push(`<div class="alert"><div class="alert-text"><span class="material-symbols-outlined">auto_stories</span>You haven't logged reading today — even 10 minutes of "${Utils.escape(d.reading.currentBook||'your book')}" counts.</div><button class="btn small primary" data-goto="reading">Log it</button></div>`);
       }
-      ['pmp','pte'].forEach(k=>{
+      ['pmp','pte','metro'].forEach(k=>{
         const e = d.exams[k];
         if(e.targetDate){
           const days = Utils.daysBetween(today, e.targetDate);
@@ -2784,7 +2824,7 @@ Render.all();
 
       // Exam gauges (PMP, PTE) + Codesys + Reading mini gauges as 4 stat cards
       const gauges = [];
-      ['pmp','pte'].forEach(k=>{
+      ['pmp','pte','metro'].forEach(k=>{
         const e = d.exams[k];
         let label, pct, sub;
         const doneCount = e.milestones.filter(m=>m.done).length;
@@ -2849,8 +2889,8 @@ Render.all();
     // ===== PMP / PTE (each its own tab, styled like CODESYS) =====
     exams(){
       const d = Store.get();
-      ['pmp','pte'].forEach(key=>{
-        const prefix = key; // 'pmp' or 'pte'
+      ['pmp','pte','metro'].forEach(key=>{
+        const prefix = key; // 'pmp', 'pte' or 'metro'
         const e = d.exams[key];
         const doneCount = e.milestones.filter(m=>m.done).length;
         const pct = e.milestones.length ? Math.round(100*doneCount/e.milestones.length) : 0;
@@ -3020,7 +3060,7 @@ Render.all();
   }
 
   // ---------- Events ----------
-  const SC_VIEWS=['dashboard','pmp','pte','codesys','bible','reading','todo'];
+  const SC_VIEWS=['dashboard','pmp','pte','metro','codesys','bible','reading','todo'];
   function showTab(tab){
     if(!SC_VIEWS.includes(tab)) tab='dashboard';
     $$('#app-study-center main > section').forEach(s=>s.style.display='none');
@@ -4034,7 +4074,7 @@ const fmt=c=>Utils.fmt(c);
 const ls={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
 const mi=n=>`<span class="material-symbols-outlined" aria-hidden="true">${n}</span>`;
 
-const SC_TABS=[['sc-dashboard','Study overview','dashboard'],['sc-pmp','PMP','military_tech'],['sc-pte','PTE Academic','translate'],['sc-codesys','CODESYS','memory'],['sc-bible','Bible','auto_stories'],['sc-reading','Reading log','menu_book'],['sc-todo','To-Do','checklist']];
+const SC_TABS=[['sc-dashboard','Study overview','dashboard'],['sc-pmp','PMP','military_tech'],['sc-pte','PTE Academic','translate'],['sc-metro','Mass Metrology','scale'],['sc-codesys','CODESYS','memory'],['sc-bible','Bible','auto_stories'],['sc-reading','Reading log','menu_book'],['sc-todo','To-Do','checklist']];
 const PAGES={
  overview:{label:'Overview',icon:'space_dashboard',el:'app-overview',sub:'Your money and progress at a glance'},
  money:{label:'Money',icon:'account_balance_wallet',el:'app-garage-fund',sub:'Everything coming in and going out',views:[['ledger','Transactions','receipt_long'],['analysis','Analysis','insights'],['shein','Shein affiliate','storefront']]},
