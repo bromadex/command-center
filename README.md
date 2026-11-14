@@ -41,7 +41,7 @@ Use **Settings → Export JSON / Import JSON** to move data or recover from a wi
 
 ## Mass Metrology study system
 
-Study → Mass Metrology has a **Today** page (cards due, streak, XP and level, 14-day activity, weak spots), a **Book** (parts and chapters with read %, a full-screen reader with "Listen"), **Cards** (spaced repetition: Again / Hard / Good / Easy, cards unlock when their chapter is read, new cards per day setting) and an **Exam room** (past papers: write answers, reveal model answers, self-mark).
+Study → Mass Metrology has a **Today** page (cards due, streak, XP and level, 14-day activity, weak spots), a **Book** (parts and chapters with read %, a full-screen reader with "Listen"), **Cards** (spaced repetition: Again / Hard / Good / Easy, cards unlock when their chapter is read, new cards per day setting) and an **Exam room** (past papers: write answers, reveal model answers, self-mark; plus timed **mock exams** of 10, 20 or 30 questions mixing flashcards from read chapters, weighted toward weak cards, with past-paper questions; missed cards go back into the day's review and results are kept as a score history). Chapters can include diagrams and 3D models (`models/metrology3d.html`).
 
 The course content is **private**: it lives in Supabase (`public.cc_course_content`, owner-only row level security, no client writes) and loads only after Cloud sync sign-in; none of it is in this repository. Progress (`cc.metro.v1`) syncs with the rest of the data and is included in Export / Import.
 
