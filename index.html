@@ -437,6 +437,83 @@ tbody tr:last-child td{border-bottom:0}
 .mny-empty .material-symbols-outlined{font-size:38px;color:var(--cc-lav)}.mny-empty b{color:var(--cc-ink);font-size:17px}
 .mny-side{display:grid;gap:18px;align-self:start;position:sticky;top:92px}
 .mny-card{padding:20px;border-radius:var(--r-xl)}
+/* Mass Metrology study system */
+.ms{display:grid;gap:16px;margin-bottom:22px}
+.ms-sub{font-size:16px;margin:4px 0 12px;color:var(--cc-ink-2)}
+.ms-tabs{justify-self:start}
+.ms-gate{display:flex;gap:18px;align-items:center;margin-bottom:22px}.ms-gate>.material-symbols-outlined{font-size:40px;color:var(--cc-lav)}.ms-gate h3{font-size:18px}
+.ms-hero{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:22px;align-items:center}
+.ms-hero h2{font-size:28px;margin:4px 0 2px}
+.ms-hero-r{display:grid;gap:14px}
+.ms-streak{display:flex;align-items:baseline;gap:8px}.ms-streak b{font:700 44px/1 var(--font-display)}.ms-streak span{color:var(--cc-ink-2)}
+.ms-lv small{display:block;margin-top:4px}
+.ms-sel{width:auto;font:inherit;font-size:22px;padding:2px 8px;border-radius:10px}
+.ms-bars{display:grid;grid-template-columns:repeat(14,1fr);gap:6px;align-items:end;height:120px}
+.ms-bars>div{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:4px}
+.ms-bars i{display:block;width:100%;border-radius:6px 6px 3px 3px;background:var(--cc-grad)}.ms-bars i.z{background:rgba(255,255,255,.12)}
+.ms-bars small{font-size:10.5px;color:var(--cc-ink-3)}
+.ms-cover{display:flex;justify-content:space-between;align-items:center;gap:18px}.ms-cover h2{font-size:26px}
+.ms-ring{--p:0;width:92px;height:92px;border-radius:50%;display:grid;place-content:center;text-align:center;background:conic-gradient(var(--cc-lav) calc(var(--p)*1%),rgba(255,255,255,.12) 0);position:relative;flex:none}
+.ms-ring::before{content:"";position:absolute;inset:9px;border-radius:50%;background:var(--cc-bg-deep)}
+.ms-ring b,.ms-ring small{position:relative}.ms-ring b{font:700 20px var(--font-display)}.ms-ring small{font-size:11px;color:var(--cc-ink-2)}
+.ms-toc{display:grid;gap:6px}
+.ms-tocr{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;text-align:left;border:1px solid var(--cc-line);background:rgba(255,255,255,.04);color:inherit;font:inherit;border-radius:14px;padding:10px 12px;cursor:pointer}
+.ms-tocr:hover:not(:disabled){background:rgba(255,255,255,.09)}.ms-tocr.soon{opacity:.55;cursor:default}
+.ms-num{font:700 13px var(--font-display);width:38px;height:38px;border-radius:12px;display:grid;place-content:center;background:rgba(169,112,255,.2);color:var(--cc-lav)}
+.ms-tt small{display:block;color:var(--cc-ink-3);font-size:12px}
+.ms-paper{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:16px;align-items:center}.ms-paper>div:first-child .material-symbols-outlined{font-size:34px;color:var(--cc-lav)}.ms-paper h3{font-size:17px}.ms-paper .cc-bar{margin:8px 0 4px}
+/* focus overlay */
+body.ms-lock{overflow:hidden}
+.ms-ov{position:fixed;inset:0;z-index:90;background:radial-gradient(1200px 700px at 20% -10%,rgba(128,84,232,.35),transparent 60%),var(--cc-bg);overflow:auto;-webkit-overflow-scrolling:touch}
+.ms-ov-in{max-width:760px;margin:0 auto;padding:max(14px,env(safe-area-inset-top)) 16px 60px;outline:none}
+.ms-ovh{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:12px;padding:10px 0 12px;background:linear-gradient(var(--cc-bg) 70%,transparent)}
+.ms-ovh>div{flex:1;min-width:0}.ms-ovh small{display:block;color:var(--cc-ink-3);font-size:12px}.ms-ovh b{font:600 17px var(--font-display);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ms-read{font-size:16.5px;line-height:1.65}
+.ms-read p{margin:0 0 14px}
+.ms-lead{font-size:19px;line-height:1.55;color:var(--cc-ink);padding:6px 0 4px}
+.ms-h{font-size:20px;margin:26px 0 10px}
+.ms-ul{margin:0 0 14px;padding-left:20px}.ms-ul li{margin:6px 0}
+.ms-src{display:block;font-size:12px;color:var(--cc-ink-3);margin-top:6px}
+.ms-who{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:10px;margin:0 0 16px}
+.ms-whoc{display:flex;gap:12px;padding:14px;border-radius:16px;background:var(--cc-glass-tile);border:1px solid var(--cc-line)}
+.ms-whoc>.material-symbols-outlined{font-size:28px;color:var(--cc-lav);flex:none}.ms-whoc p{margin:4px 0 0;font-size:14.5px;line-height:1.5;color:var(--cc-ink-2)}
+.ms-def{padding:14px 16px;border-radius:16px;background:var(--cc-glass-tile);border:1px solid var(--cc-line);margin:0 0 14px}.ms-def p{margin:6px 0 0}.ms-like{color:var(--cc-ink-2)}.ms-off{font-size:14px;color:var(--cc-ink-3)}
+.ms-cmp{margin:0 0 16px;overflow-x:auto}.ms-cmp table{width:100%;border-collapse:collapse;font-size:14.5px;margin-top:8px}.ms-cmp th,.ms-cmp td{padding:9px 10px;border-bottom:1px solid var(--cc-line);text-align:left}.ms-cmp tr:first-child th{color:var(--cc-ink-3);font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+.ms-box{border-radius:18px;padding:14px 16px;margin:0 0 16px;border:1px solid var(--cc-line)}
+.ms-boxh{display:flex;align-items:center;gap:6px;font:600 13px var(--font);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.ms-rem{background:rgba(127,227,180,.08);border-color:rgba(127,227,180,.3)}.ms-rem .ms-boxh{color:var(--cc-good)}
+.ms-chips{display:flex;flex-wrap:wrap;gap:8px}.ms-chips span{padding:6px 12px;border-radius:99px;background:rgba(255,255,255,.08);font-size:14.5px}
+.ms-trap{background:rgba(255,142,142,.08);border-color:rgba(255,142,142,.3)}.ms-trap .ms-boxh{color:var(--cc-bad)}.ms-trap p{margin:0}
+.ms-goal{background:rgba(169,112,255,.1);border-color:rgba(169,112,255,.35)}.ms-goal .ms-boxh{color:var(--cc-lav)}.ms-goal .ms-ul{margin:0}
+.ms-exam{background:rgba(156,196,255,.08);border-color:rgba(156,196,255,.3)}
+.ms-exam summary{list-style:none;cursor:pointer;display:grid;gap:4px}.ms-exam summary::-webkit-details-marker{display:none}
+.ms-exam .ms-boxh{color:var(--cc-info);margin:0}.ms-q{font-weight:600}.ms-reveal{color:var(--cc-lav);font-size:13.5px}
+.ms-exam[open] .ms-reveal{display:none}.ms-exam p{margin:10px 0 0}
+.ms-fig{margin:0 0 16px}.ms-fig img{width:100%;border-radius:14px;background:#fff}.ms-fig figcaption{font-size:13px;color:var(--cc-ink-2);margin-top:6px}
+.ms-readf{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:26px 0 12px;padding-top:16px;border-top:1px solid var(--cc-line)}
+/* flashcards */
+.ms-progress{height:6px;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden;margin-bottom:18px}.ms-progress i{display:block;height:100%;background:var(--cc-grad)}
+.ms-card{min-height:300px;border-radius:26px;padding:28px 24px;background:var(--cc-glass-modal);border:1px solid var(--cc-line-strong);box-shadow:var(--cc-shadow),var(--cc-rim);display:flex;flex-direction:column;gap:18px;justify-content:center}
+.ms-front{font:600 22px/1.4 var(--font-display);text-align:center}
+.ms-back{font-size:18px;line-height:1.55;text-align:center;padding-top:18px;border-top:1px dashed var(--cc-line-strong);animation:msIn .25s var(--ease)}
+.ms-try{width:100%;min-height:70px;font:inherit;color:inherit;background:var(--cc-field);border:1px solid var(--cc-line);border-radius:14px;padding:10px 12px;resize:vertical}
+@keyframes msIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.ms-grade{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:16px}
+.ms-show{grid-column:1/-1;justify-content:center;padding:14px;font-size:16px}
+.ms-g{display:grid;gap:2px;justify-items:center;padding:12px 6px;border-radius:16px;border:1px solid var(--cc-line);background:rgba(255,255,255,.06);color:inherit;font:inherit;cursor:pointer}
+.ms-g b{font-size:15px}.ms-g small{font-size:12px;color:var(--cc-ink-2)}
+.ms-g.again{border-color:rgba(255,142,142,.45)}.ms-g.again b{color:var(--cc-bad)}.ms-g.hard b{color:var(--cc-warn)}.ms-g.good{border-color:rgba(127,227,180,.45)}.ms-g.good b{color:var(--cc-good)}.ms-g.easy b{color:var(--cc-info)}
+.ms-g:hover{background:rgba(255,255,255,.12)}
+kbd{font:11px var(--font);padding:1px 6px;border-radius:6px;border:1px solid var(--cc-line);color:var(--cc-ink-3)}
+.ms-done{text-align:center;display:grid;gap:14px;justify-items:center;padding-top:10vh}.ms-done>.material-symbols-outlined{font-size:64px;color:var(--cc-warn)}.ms-done h2{font-size:30px}
+/* exam room paper */
+.ms-pq{padding:16px;border-radius:18px;background:var(--cc-glass-tile);border:1px solid var(--cc-line);margin:0 0 12px}
+.ms-pqh{display:flex;justify-content:space-between}.ms-pq p{margin:6px 0 10px}
+.ms-pq textarea{width:100%;font:inherit;font-size:15px;color:inherit;background:var(--cc-field);border:1px solid var(--cc-line);border-radius:12px;padding:10px 12px;resize:vertical}
+.ms-pqf{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-top:10px}
+.ms-model{margin-top:8px;padding:10px 12px;border-radius:12px;background:rgba(127,227,180,.08);border:1px solid rgba(127,227,180,.3);font-size:15px}
+.ms-mark{display:flex;align-items:center;gap:6px;font-size:13.5px;color:var(--cc-ink-2)}.ms-mark select{width:auto;padding:4px 8px}
+@media (max-width:760px){.ms-hero{grid-template-columns:1fr}.ms-grade{grid-template-columns:repeat(2,minmax(0,1fr))}.ms-front{font-size:19px}.ms-paper{grid-template-columns:minmax(0,1fr)}.ms-paper>div:first-child{display:none}.ms-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));width:100%}.ms-tabs button{padding:8px 2px;font-size:12px;text-align:center}.ms-tabs .material-symbols-outlined{display:none}.ms-cover h2{font-size:21px}}
 /* House project */
 .hse{display:grid;gap:18px}
 .hse-hero{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:20px;align-items:start}
@@ -978,7 +1055,9 @@ tbody tr:last-child td{border-bottom:0}
   </section>
 
   <section id="view-sc-metro" style="display:none">
-    <div class="section-title"><h2>Mass Metrology</h2><span class="sub">Trade Measures Zimbabwe · target date and course milestones</span></div>
+    <div class="section-title"><h2>Mass Metrology</h2><span class="sub">Trade Measures Zimbabwe · book, daily cards, exam room, target date and milestones</span></div>
+    <div id="msHost"></div>
+    <h3 class="ms-sub">Target date and milestones</h3>
     <div class="grid two">
       <div class="card">
         <h3><span class="dot"></span>Progress</h3>
@@ -2494,7 +2573,7 @@ const Events = (() => {
 
     $('#exportBtn').addEventListener('click', () => {
       // One file for everything: finance + planner (already in Store) and the Study Center.
-      const payload = { ...Store.get(), studyCenter: readSC(), exportMeta: { app: 'Personal Command Center', exportedAt: new Date().toISOString() } };
+      const payload = { ...Store.get(), studyCenter: readSC(), metroStudy: (()=>{ try { return JSON.parse(localStorage.getItem('cc.metro.v1')||'null'); } catch(e) { return null; } })(), exportMeta: { app: 'Personal Command Center', exportedAt: new Date().toISOString() } };
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
@@ -2520,8 +2599,9 @@ const Events = (() => {
       if (!ok) { e.target.value = ''; return; }
       try {
         snapshot('preImport');
-        const { studyCenter, exportMeta, ...finance } = data;
+        const { studyCenter, exportMeta, metroStudy, ...finance } = data;
         Storage.save(finance);
+        if (metroStudy) localStorage.setItem('cc.metro.v1', JSON.stringify(metroStudy));
         if (studyCenter) localStorage.setItem(SC_KEY, JSON.stringify(studyCenter));
         location.reload();
       } catch (err) {
@@ -4122,6 +4202,7 @@ function go(page,sub,opts){
   if(page==='overview')renderOverview();
   if(page==='money'&&sub==='analysis')renderAnalysis();
   if(page==='rounds')renderRounds();
+  if(page==='study'&&sub==='sc-metro'&&window.MetroStudy)MetroStudy.render();
   if(page==='house')renderHouse();else{const hm=document.getElementById('hseM');if(hm)hm.innerHTML=''}
   // titles + subnav
   let title=P.label,subt=P.sub;
@@ -4210,6 +4291,7 @@ function badges(){
     const due=s.transactions.filter(x=>x.recurring&&x.nextDueDate&&x.nextDueDate<=t).length;
     const set=(id,n)=>document.querySelectorAll(`[data-badge="${id}"]`).forEach(b=>{b.hidden=!n;b.textContent=n});
     set('debts',od);set('money',due);
+    if(window.MetroStudy)set('study',MetroStudy.dueCount());
     set('rounds',(s.rounds||[]).filter(r=>rndDue(s,r,rndCur(r))).length);
   }catch(e){}
 }
@@ -4285,6 +4367,7 @@ function renderOverview(){
   const pr=[];
   s.debts.filter(d=>d.remainingAmountCents>0&&d.dueDate&&d.dueDate<today).forEach(d=>pr.push({cls:'bad',icon:'warning',t:(d.dir==='owed'?d.person+' owes you ':'You owe '+d.person+' ')+fmt(d.remainingAmountCents),s:'Overdue since '+d.dueDate,go:()=>go('debts')}));
   (s.rounds||[]).forEach(r=>{const c=rndCur(r);if(rndDue(s,r,c))pr.push({cls:'warn',icon:'groups',t:'Pay '+fmt(r.amountCents)+' to '+r.name,s:rndMonthLabel(r,c)+' contribution is due by '+rndEndLabel(r,c),go:()=>go('rounds')});const pd=rndPayoutDue(s,r);if(pd!=null)pr.push({cls:'info',icon:'savings',t:'Your '+r.name+' payout ('+rndMonthLabel(r,pd)+')',s:fmt(rndPot(r))+' at month end · mark it received when it arrives',go:()=>go('rounds')})});
+  if(window.MetroStudy){const mc=MetroStudy.dueCount();if(mc)pr.push({cls:'info',icon:'style',t:mc+' Mass Metrology card'+(mc===1?'':'s')+' to review',s:'About '+Math.max(1,Math.ceil(mc*.35))+' min · keeps it fresh in your memory',go:()=>go('study','sc-metro')})}
   if(due)pr.push({cls:'warn',icon:'autorenew',t:due+' recurring transaction'+(due>1?'s':'')+' due',s:'Process them to keep the ledger current',go:()=>{go('money','ledger')}});
   active.filter(t=>t.deadline&&t.left!==null&&t.left>=0&&t.left<=30&&!t.reached).forEach(t=>pr.push({cls:t.pct<50?'bad':'warn',icon:'flag',t:t.name+' is due in '+t.left+' day'+(t.left===1?'':'s'),s:(t.has?Math.round(t.pct)+'% funded':'No amount set')+(t.pct<50&&t.has?' · low progress':''),go:()=>{go('targets');Planner.openTarget(t.id)}}));
   active.filter(t=>t.late).forEach(t=>pr.push({cls:'bad',icon:'flag',t:t.name+' is past its deadline',s:Math.abs(t.left)+' days overdue',go:()=>{go('targets');Planner.openTarget(t.id)}}));
@@ -4805,7 +4888,7 @@ const ls={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:
 const $=id=>document.getElementById(id);
 const sess=()=>{try{return JSON.parse(ls.get(SESS)||'null')}catch(e){return null}};
 const strip=o=>{const c={...o};delete c.ui;delete c.exportMeta;return c};
-function payload(){const fin=JSON.parse(ls.get(FIN)||'{}'),sc=JSON.parse(ls.get(SC)||'null');const out=strip(fin);if(sc){const {ui,...rest}=sc;out.studyCenter=rest}return out}
+function payload(){const fin=JSON.parse(ls.get(FIN)||'{}'),sc=JSON.parse(ls.get(SC)||'null');const out=strip(fin);if(sc){const {ui,...rest}=sc;out.studyCenter=rest}const ms=ls.get('cc.metro.v1');if(ms){try{out.metroStudy=JSON.parse(ms)}catch(e){}}return out}
 const hashOf=str=>{let h=5381;for(let i=0;i<str.length;i++)h=((h<<5)+h+str.charCodeAt(i))|0;return String(h>>>0)};
 let busy=false,timer=null,lastSeen=null;
 function status(msg,bad){const el=$('syncStatus');if(el){el.textContent=msg;el.style.color=bad?'var(--cc-bad)':''}}
@@ -4828,7 +4911,8 @@ const mark=(rev,str)=>{ls.set(BASE,String(rev));ls.set(HASH,hashOf(str));ls.set(
 function apply(remote){
   try{ls.set('garageFund.preSync.'+new Date().toISOString().replace(/[:.]/g,'-'),ls.get(FIN)||'');const k=Object.keys(localStorage).filter(x=>x.startsWith('garageFund.preSync.')).sort();while(k.length>3)ls.del(k.shift())}catch(e){}
   const localFin=JSON.parse(ls.get(FIN)||'{}'),localSc=JSON.parse(ls.get(SC)||'null');
-  const {studyCenter,...fin}=remote;fin.ui=localFin.ui||fin.ui;ls.set(FIN,JSON.stringify(fin));
+  const {studyCenter,metroStudy,...fin}=remote;fin.ui=localFin.ui||fin.ui;ls.set(FIN,JSON.stringify(fin));
+  if(metroStudy)ls.set('cc.metro.v1',JSON.stringify(metroStudy));
   if(studyCenter)ls.set(SC,JSON.stringify({...studyCenter,ui:(localSc&&localSc.ui)||studyCenter.ui}));
 }
 async function sync(manual){
@@ -4858,16 +4942,238 @@ setInterval(()=>{if(!sess()||busy)return;const h=hashOf(JSON.stringify(payload()
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')sync(false)});
 document.addEventListener('click',async e=>{
   if(e.target.closest('#sbIn')){const email=$('sbEmail').value.trim(),pw=$('sbPass').value;if(!email||!pw)return status('Enter your email and password.',true);
-    status('Signing in…');try{const prev=sess(),se=await auth({email,password:pw},'password');$('sbPass').value='';if(!prev||prev.user.id!==se.user.id){ls.del(BASE);ls.del(HASH)}paint();sync(true)}catch(err){status(err.message,true)}return}
+    status('Signing in…');try{const prev=sess(),se=await auth({email,password:pw},'password');$('sbPass').value='';if(!prev||prev.user.id!==se.user.id){ls.del(BASE);ls.del(HASH);if(window.MetroStudy)MetroStudy.clear()}paint();sync(true);if(window.MetroStudy)MetroStudy.refresh(true)}catch(err){status(err.message,true)}return}
   if(e.target.closest('#sbNow'))return sync(true);
   if(e.target.closest('#sbOut')){if(!confirm('Sign out on this device? Your data stays in this browser and in the cloud.'))return;const se=sess();
     try{if(se)await fetch(SB+'/auth/v1/logout',{method:'POST',headers:{apikey:KEY,Authorization:'Bearer '+se.access_token}})}catch(err){}
-    [SESS,BASE,HASH,LAST].forEach(ls.del);paint()}
+    [SESS,BASE,HASH,LAST].forEach(ls.del);if(window.MetroStudy)MetroStudy.clear();paint()}
 });
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='sbPass'||e.target.id==='sbEmail'))$('sbIn').click()});
 // clean up the earlier GitHub-sync settings if they were ever saved
 ['cc.sync.cfg','cc.sync.sha'].forEach(ls.del);
+// read access for other modules (e.g. the private course content)
+async function restGet(path){const se=await token();const r=await fetch(SB+'/rest/v1/'+path,{headers:{apikey:KEY,Authorization:'Bearer '+se.access_token},cache:'no-store'});const j=await r.json().catch(()=>null);if(!r.ok)throw new Error((j&&(j.message||j.hint))||('Supabase error '+r.status));return j}
+window.CCCloud={session:()=>sess(),get:restGet};
 paint();sync(false);
+})();
+</script>
+<script>
+/* ============================================================
+   Mass Metrology study system: book, flashcards (spaced repetition), exam room.
+   Course content is private: it lives in Supabase (public.cc_course_content, owner-only
+   RLS) and is fetched after Cloud sync sign-in, then cached on this device. Nothing of
+   the course is in this public file. Progress lives in localStorage 'cc.metro.v1' and is
+   synced with the rest of the data as "metroStudy".
+   ============================================================ */
+(function(){
+'use strict';
+const PKEY='cc.metro.v1',CKEY='cc.metro.content';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const md=s=>esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\*([^*]+?)\*/g,'<i>$1</i>');
+const mi=n=>`<span class="material-symbols-outlined" aria-hidden="true">${n}</span>`;
+const today=()=>Utils.todayISO();
+const addDays=(iso,n)=>{const d=new Date(iso+'T00:00:00');d.setDate(d.getDate()+n);return ccISO(d)};
+const LEVELS=[[0,'Apprentice'],[150,'Trainee technician'],[400,'Scale technician'],[900,'Senior technician'],[1800,'Examiner'],[3500,'Inspector'],[6000,'Superintendent']];
+
+/* ---------- progress ---------- */
+const blank=()=>({read:{},cards:{},days:{},xp:0,answers:{},newPerDay:5});
+function P(){try{const p=JSON.parse(localStorage.getItem(PKEY)||'null');if(p&&typeof p==='object')return Object.assign(blank(),p)}catch(e){}return blank()}
+function save(p){try{localStorage.setItem(PKEY,JSON.stringify(p))}catch(e){}}
+const day=(p,d)=>(p.days[d||today()]=p.days[d||today()]||{rev:0,ok:0,xp:0,les:0,nw:0});
+const addXP=(p,n)=>{p.xp+=n;day(p).xp+=n};
+function level(xp){let i=0;while(i<LEVELS.length-1&&xp>=LEVELS[i+1][0])i++;const cur=LEVELS[i],nx=LEVELS[i+1];return{name:cur[1],n:i+1,pct:nx?Math.round((xp-cur[0])/(nx[0]-cur[0])*100):100,next:nx?nx[1]:null,need:nx?nx[0]-xp:0}}
+function streak(p){let d=today(),n=0;const act=x=>p.days[x]&&(p.days[x].rev||p.days[x].les);if(!act(d))d=addDays(d,-1);while(act(d)){n++;d=addDays(d,-1)}return n}
+
+/* ---------- content ---------- */
+let C=null,loading=false,loadErr='';
+function parse(rows){const c={meta:null,ch:{},cards:[],papers:[]};(rows||[]).forEach(r=>{if(r.kind==='meta')c.meta=r.data;else if(r.kind==='chapter')c.ch[r.data.id]=r.data;else if(r.kind==='card')c.cards.push(r.data);else if(r.kind==='paper')c.papers.push(r.data)});return c.meta?c:null}
+try{const cached=JSON.parse(localStorage.getItem(CKEY)||'null');if(cached)C=parse(cached.rows)}catch(e){}
+async function refresh(force){
+  const cl=window.CCCloud;if(!cl||!cl.session()||loading)return;
+  try{const cached=JSON.parse(localStorage.getItem(CKEY)||'null');if(!force&&cached&&Date.now()-cached.at<10*60*1000&&C)return}catch(e){}
+  loading=true;loadErr='';
+  try{const rows=await cl.get('cc_course_content?course=eq.metro&select=id,kind,part,ord,data&order=ord.asc');C=parse(rows);try{localStorage.setItem(CKEY,JSON.stringify({at:Date.now(),rows}))}catch(e){}}
+  catch(e){loadErr=e.message}
+  finally{loading=false;render()}
+}
+const chapters=()=>C?C.meta.parts.flatMap(pt=>pt.chapters.map(ch=>({...ch,part:pt.id,ready:!!C.ch[ch.id]}))):[];
+
+/* ---------- spaced repetition (SM-2 style) ---------- */
+function next(s,g){s=Object.assign({i:0,e:2.5,r:0,l:0},s);
+  if(g===0){s.l++;s.e=Math.max(1.3,s.e-.2);s.r=0;s.i=0}
+  else if(g===1){s.e=Math.max(1.3,s.e-.15);s.i=s.r===0?1:Math.max(1,Math.round(s.i*1.2));s.r++}
+  else if(g===2){s.i=s.r===0?1:s.r===1?3:Math.max(s.i+1,Math.round(s.i*s.e));s.r++}
+  else{s.i=s.r===0?3:Math.max(s.i+2,Math.round(Math.max(s.i,1)*s.e*1.3));s.e+=.15;s.r++}
+  s.d=addDays(today(),s.i);return s}
+const ivlText=n=>n<1?'<10 min':n===1?'1 day':n<30?n+' days':n<365?Math.round(n/30)+' mo':(n/365).toFixed(1)+' yr';
+function queue(p){if(!C)return{due:[],nw:[]};const t=today();
+  const due=C.cards.filter(c=>p.cards[c.id]&&p.cards[c.id].d<=t);
+  const room=Math.max(0,p.newPerDay-day(p).nw);
+  const nw=C.cards.filter(c=>!p.cards[c.id]&&p.read[c.ch]).slice(0,room);
+  return{due,nw}}
+function dueCount(){const p=P(),q=queue(p);return q.due.length+q.nw.length}
+
+/* ---------- overlay (focus mode) ---------- */
+function overlay(html){close();const d=document.createElement('div');d.className='ms-ov';d.id='msOv';d.innerHTML=`<div class="ms-ov-in">${html}</div>`;document.body.appendChild(d);document.body.classList.add('ms-lock');d.querySelector('.ms-ov-in').focus&&d.querySelector('.ms-ov-in').setAttribute('tabindex','-1');return d}
+function close(){const o=$('msOv');if(o)o.remove();document.body.classList.remove('ms-lock');try{speechSynthesis.cancel()}catch(e){}}
+
+/* ---------- book reader ---------- */
+function blockHTML(b){
+  switch(b.t){
+    case 'lead':return `<p class="ms-lead">${md(b.text)}</p>`;
+    case 'h':return `<h3 class="ms-h">${md(b.text)}</h3>`;
+    case 'p':return `<p>${md(b.text)}</p>`;
+    case 'list':return `<ul class="ms-ul">${b.items.map(x=>`<li>${md(x)}</li>`).join('')}</ul>`;
+    case 'who':return `<div class="ms-who">${b.items.map(w=>`<div class="ms-whoc">${mi(w.icon||'person')}<div><b>${esc(w.name)}</b><p>${md(w.role)}</p>${w.src?`<small class="ms-src">${esc(w.src)}</small>`:''}</div></div>`).join('')}</div>`;
+    case 'def':return `<div class="ms-def"><b>${esc(b.term)}</b><p>${md(b.plain)}</p>${b.like?`<p class="ms-like">${mi('lightbulb')} ${md(b.like)}</p>`:''}${b.official?`<p class="ms-off">Official: ${md(b.official)}</p>`:''}${b.src?`<small class="ms-src">${esc(b.src)}</small>`:''}</div>`;
+    case 'compare':return `<div class="ms-cmp"><b>${esc(b.title||'')}</b><table>${b.cols?`<tr>${b.cols.map(c=>`<th>${esc(c)}</th>`).join('')}</tr>`:''}${b.rows.map(r=>`<tr>${r.map((c,i)=>i?`<td>${md(c)}</td>`:`<th>${md(c)}</th>`).join('')}</tr>`).join('')}</table></div>`;
+    case 'remember':return `<div class="ms-box ms-rem"><div class="ms-boxh">${mi('psychology')} Remember this</div><div class="ms-chips">${b.items.map(x=>`<span>${md(x)}</span>`).join('')}</div></div>`;
+    case 'trap':return `<div class="ms-box ms-trap"><div class="ms-boxh">${mi('report')} Exam trap</div><p>${md(b.text)}</p></div>`;
+    case 'exam':return `<details class="ms-box ms-exam"><summary><span class="ms-boxh">${mi('quiz')} Exam corner${b.marks?` · ${b.marks} mark${b.marks>1?'s':''}`:''}</span><span class="ms-q">${md(b.q)}</span><span class="ms-reveal">Show answer</span></summary><p>${md(b.a)}</p>${b.src?`<small class="ms-src">${esc(b.src)}</small>`:''}</details>`;
+    case 'img':return `<figure class="ms-fig"><img src="${esc(b.src)}" alt="${esc(b.alt||'')}" loading="lazy">${b.cap||b.credit?`<figcaption>${md(b.cap||'')}${b.credit?` <small>${esc(b.credit)}</small>`:''}</figcaption>`:''}</figure>`;
+    case 'src':return `<p class="ms-src">${md(b.text)}</p>`;
+    default:return '';
+  }
+}
+const plain=html=>{const d=document.createElement('div');d.innerHTML=html;d.querySelectorAll('.ms-reveal,.ms-src').forEach(x=>x.remove());return d.innerText};
+function openChapter(id){
+  const ch=C&&C.ch[id];if(!ch)return;const list=chapters().filter(x=>x.ready),i=list.findIndex(x=>x.id===id),p=P(),done=p.read[id];
+  const body=ch.blocks.map(blockHTML).join('');
+  const o=overlay(`<header class="ms-ovh"><button class="icon" data-ms-close aria-label="Close">${mi('close')}</button><div><small>${esc(C.meta.title)} · Chapter ${esc(id)}</small><b>${esc(ch.title)}</b></div><button class="btn ghost small" data-ms-listen>${mi('volume_up')}Listen</button></header>
+    <article class="ms-read">${ch.answers&&ch.answers.length?`<div class="ms-box ms-goal"><div class="ms-boxh">${mi('flag')} After this chapter you can answer</div><ul class="ms-ul">${ch.answers.map(a=>`<li>${esc(a)}</li>`).join('')}</ul></div>`:''}${body}
+    <footer class="ms-readf">${done?`<span class="tag">${mi('check')} Read on ${esc(done)}</span>`:`<button class="btn primary" data-ms-markread="${esc(id)}">${mi('task_alt')}Mark as read · +20 XP</button>`}
+      <span class="hse-acts">${i>0?`<button class="btn ghost small" data-ms-open="${esc(list[i-1].id)}">${mi('arrow_back')}Previous</button>`:''}${i<list.length-1?`<button class="btn ghost small" data-ms-open="${esc(list[i+1].id)}">Next${mi('arrow_forward')}</button>`:''}</span></footer>
+      <p class="muted" style="font-size:12px">${esc(C.meta.legend||'')}</p></article>`);
+  o.querySelector('.ms-ov-in').scrollTop=0;
+  o.querySelector('[data-ms-listen]').addEventListener('click',e=>{try{if(speechSynthesis.speaking){speechSynthesis.cancel();e.currentTarget.innerHTML=mi('volume_up')+'Listen';return}const u=new SpeechSynthesisUtterance(ch.title+'. '+plain(body));u.rate=.97;speechSynthesis.speak(u);e.currentTarget.innerHTML=mi('stop_circle')+'Stop'}catch(err){alert('Listening is not supported in this browser.')}});
+}
+
+/* ---------- flashcard session ---------- */
+let S=null;
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function startSession(extra){const p=P(),q=queue(p);let list=[...shuffle(q.due),...q.nw];
+  if(!list.length&&extra){list=shuffle(C.cards.filter(c=>p.read[c.ch])).slice(0,15)}
+  if(!list.length){alert('Nothing to review right now. Read a chapter to unlock its cards.');return}
+  S={list:list.map(c=>c.id),i:0,shown:false,again:{},done:0,ok:0,xp:0,isNew:new Set(q.nw.map(c=>c.id))};drawCard()}
+function drawCard(){
+  const id=S.list[S.i];if(!id)return endSession();
+  const c=C.cards.find(x=>x.id===id),p=P(),st=p.cards[id];
+  const left=S.list.length-S.i;
+  const g=[0,1,2,3].map(k=>ivlText(next(st||{},k).i));
+  overlay(`<header class="ms-ovh"><button class="icon" data-ms-close aria-label="End session">${mi('close')}</button><div><small>Review · ${left} left</small><b>${S.isNew.has(id)&&!st?'New card':'Review'} · Chapter ${esc(c.ch)}</b></div><span class="tag">${S.done} done</span></header>
+   <div class="ms-progress"><i style="width:${Math.round(S.i/S.list.length*100)}%"></i></div>
+   <div class="ms-card ${S.shown?'flip':''}">
+     <div class="ms-front">${md(c.front)}</div>
+     ${S.shown?`<div class="ms-back">${md(c.back)}${c.src?`<small class="ms-src">Source: ${esc(c.src)}</small>`:''}</div>`:`<textarea class="ms-try" placeholder="Answer in your head, or type it here first (optional)"></textarea>`}
+   </div>
+   <div class="ms-grade">${S.shown?[['Again','again',0],['Hard','hard',1],['Good','good',2],['Easy','easy',3]].map(([l,c2,k])=>`<button class="ms-g ${c2}" data-ms-grade="${k}"><b>${l}</b><small>${g[k]}</small><kbd>${k+1}</kbd></button>`).join(''):`<button class="btn primary ms-show" data-ms-show>Show answer <kbd>Space</kbd></button>`}</div>
+   ${S.shown?`<p class="muted" style="text-align:center;font-size:12.5px;margin:6px 0 0">Forgot? <button class="ov-link" data-ms-open="${esc(c.ch)}">Re-read chapter ${esc(c.ch)}</button></p>`:''}`);
+}
+function grade(k){const id=S.list[S.i],p=P(),wasNew=!p.cards[id];
+  p.cards[id]=next(p.cards[id]||{},k);const dd=day(p);dd.rev++;if(k>0)dd.ok++;if(wasNew)dd.nw++;
+  const xp=[1,2,3,3][k]+(wasNew?1:0);addXP(p,xp);save(p);
+  S.done++;if(k>0)S.ok++;S.xp+=xp;
+  if(k===0&&(S.again[id]||0)<3){S.again[id]=(S.again[id]||0)+1;S.list.push(id)}
+  S.i++;S.shown=false;drawCard()}
+function endSession(){const p=P(),pct=S.done?Math.round(S.ok/S.done*100):0,st=streak(p),lv=level(p.xp);
+  overlay(`<div class="ms-done">${mi('celebration')}<h2>Done for today</h2><p>${S.done} review${S.done===1?'':'s'} · ${pct}% remembered · <b>+${S.xp} XP</b></p>
+    <div class="ana-tiles" style="grid-template-columns:repeat(3,minmax(0,1fr))"><div class="stat"><div class="k">Streak</div><div class="v">${st} 🔥</div></div><div class="stat"><div class="k">Level ${lv.n}</div><div class="v" style="font-size:16px">${esc(lv.name)}</div></div><div class="stat"><div class="k">Total XP</div><div class="v">${p.xp}</div></div></div>
+    <button class="btn primary" data-ms-close>Back to study</button></div>`);S=null;render()}
+
+/* ---------- exam room ---------- */
+let paperOpen=null;
+function openPaper(id){
+  const pp=C.papers.find(x=>x.id===id);if(!pp)return;paperOpen=id;const p=P(),A=p.answers[id]||{};
+  const total=pp.qs.reduce((a,q)=>a+q.m,0),got=pp.qs.reduce((a,q)=>a+(+((A[q.n]||{}).s)||0),0),marked=pp.qs.filter(q=>(A[q.n]||{}).s!=null&&(A[q.n]||{}).s!=='').length;
+  overlay(`<header class="ms-ovh"><button class="icon" data-ms-close aria-label="Close">${mi('close')}</button><div><small>Exam room · ${pp.minutes||''}${pp.minutes?' min':''}</small><b>${esc(pp.title)}</b></div><span class="tag" id="msScore">${got} / ${total}</span></header>
+   <article class="ms-read"><p class="muted">${esc(pp.note||'')} Write your answer, then reveal the model answer (where available) and mark yourself honestly. Each marked question earns 5 XP.</p>
+   ${pp.qs.map(q=>{const a=A[q.n]||{};return `<div class="ms-pq"><div class="ms-pqh"><b>Q${esc(q.n)}</b><span class="muted">[${q.m}]</span></div><p>${md(q.q)}</p>
+     <textarea data-ms-ans="${esc(q.n)}" rows="3" placeholder="Your answer">${esc(a.t||'')}</textarea>
+     <div class="ms-pqf">${q.a?`<details><summary class="ov-link">Show model answer</summary><div class="ms-model">${md(q.a)}${q.src?`<small class="ms-src">${esc(q.src)}</small>`:''}</div></details>`:`<span class="muted" style="font-size:12.5px">${mi('schedule')} Model answer coming with its chapter</span>`}
+       <label class="ms-mark">My mark <select data-ms-score="${esc(q.n)}"><option value="">–</option>${Array.from({length:q.m+1},(_,i)=>`<option ${String(a.s)===String(i)?'selected':''}>${i}</option>`).join('')}</select> / ${q.m}</label></div></div>`}).join('')}
+   <p class="muted">${marked} of ${pp.qs.length} questions marked.</p></article>`);
+}
+
+/* ---------- main page ---------- */
+let tab='today';
+function render(){
+  const host=$('msHost');if(!host||!host.offsetParent&&!host.isConnected)return;
+  const cl=window.CCCloud,signed=cl&&cl.session();
+  if(!C){host.innerHTML=`<section class="card ms-gate">${mi('lock')}<div><h3>${loading?'Loading your course…':'Sign in to open your course'}</h3><p class="muted">The Mass Metrology book, flashcards and past papers are private: they load only after you sign in under Settings → Cloud sync.${loadErr?` <br><span style="color:var(--cc-bad)">${esc(loadErr)}</span>`:''}</p>${signed?`<button class="btn primary" data-ms-reload>${mi('refresh')}Load course</button>`:`<button class="btn primary" data-go="settings">${mi('login')}Go to sign in</button>`}</div></section>`;if(signed&&!loading&&!loadErr)refresh(true);return}
+  const p=P(),q=queue(p),chs=chapters(),ready=chs.filter(c=>c.ready),readN=ready.filter(c=>p.read[c.id]).length;
+  const bookPct=chs.length?Math.round(chs.filter(c=>p.read[c.id]).length/chs.length*100):0;
+  const known=C.cards.filter(c=>p.cards[c.id]),mastered=known.filter(c=>p.cards[c.id].i>=21).length,learning=known.length-mastered;
+  const st=streak(p),lv=level(p.xp),td=day(p),nextCh=ready.find(c=>!p.read[c.id]);
+  let exam='';try{const sc=JSON.parse(localStorage.getItem('studyCommandCenterV1')||'{}');const dt=sc.exams&&sc.exams.metro&&sc.exams.metro.targetDate;if(dt){const n=Math.round((new Date(dt+'T00:00:00')-new Date(today()+'T00:00:00'))/864e5);exam=n>=0?n+' days':'passed'}}catch(e){}
+  const tabs=[['today','Today','wb_sunny'],['book','Book','menu_book'],['cards','Cards','style'],['exam','Exam room','quiz']];
+  let body='';
+  if(tab==='today'){
+    const days=[...Array(14)].map((_,i)=>addDays(today(),i-13)),mx=Math.max(1,...days.map(d=>(p.days[d]||{}).rev||0));
+    const weak=C.cards.filter(c=>p.cards[c.id]&&p.cards[c.id].l>=2).sort((a,b)=>p.cards[b.id].l-p.cards[a.id].l).slice(0,5);
+    body=`<section class="card ms-hero"><div class="ms-hero-l"><div class="ov-eyebrow">${new Date().toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long'})}</div><h2>${q.due.length+q.nw.length?`${q.due.length+q.nw.length} card${q.due.length+q.nw.length===1?'':'s'} waiting`:nextCh?'Time to read':'All caught up'}</h2>
+        <p class="muted">${q.due.length} review${q.due.length===1?'':'s'} due · ${q.nw.length} new · about ${Math.max(1,Math.ceil((q.due.length+q.nw.length)*.35))} min</p>
+        <div class="hse-acts" style="justify-content:flex-start;margin-top:12px">${q.due.length+q.nw.length?`<button class="btn primary" data-ms-start>${mi('play_arrow')}Start review</button>`:''}${nextCh?`<button class="btn ${q.due.length+q.nw.length?'':'primary'}" data-ms-open="${esc(nextCh.id)}">${mi('menu_book')}Read: ${esc(nextCh.title)}</button>`:''}${!q.due.length&&!q.nw.length&&readN?`<button class="btn" data-ms-extra>${mi('fitness_center')}Extra practice</button>`:''}</div></div>
+      <div class="ms-hero-r"><div class="ms-streak"><b>${st}</b><span>day streak 🔥</span></div><div class="ms-lv"><div class="ana-dow"><span>Level ${lv.n} · ${esc(lv.name)}</span><b class="num">${p.xp} XP</b></div><div class="cc-bar"><i style="width:${lv.pct}%"></i></div><small class="muted">${lv.next?`${lv.need} XP to ${esc(lv.next)}`:'Top level reached'}</small></div></div></section>
+     <div class="ana-tiles">
+      <div class="stat"><div class="k">Book</div><div class="v">${bookPct}%</div><small>${readN} of ${chs.length} chapters read</small></div>
+      <div class="stat"><div class="k">Cards</div><div class="v">${mastered}</div><small>mastered · ${learning} learning · ${C.cards.length-known.length} new</small></div>
+      <div class="stat"><div class="k">Today</div><div class="v">${td.rev}</div><small>reviews · +${td.xp} XP</small></div>
+      <div class="stat"><div class="k">Exam</div><div class="v">${exam||'–'}</div><small>${exam?'to your target date':'Set a target date below'}</small></div>
+      <div class="stat"><div class="k">New per day</div><div class="v"><select data-ms-npd class="ms-sel">${[3,5,8,10,15,20].map(n=>`<option ${n===p.newPerDay?'selected':''}>${n}</option>`).join('')}</select></div><small>new cards a day</small></div>
+     </div>
+     <div class="ov-grid2"><section class="card"><div class="ov-head"><h2>Last 14 days</h2><span class="muted" style="font-size:12.5px">reviews per day</span></div><div class="ms-bars">${days.map(d=>{const v=(p.days[d]||{}).rev||0;return `<div title="${d}: ${v} reviews"><i style="height:${v?Math.max(8,v/mx*100):3}%" class="${v?'':'z'}"></i><small>${new Date(d+'T00:00:00').toLocaleDateString(undefined,{weekday:'narrow'})}</small></div>`}).join('')}</div></section>
+     <section class="card"><div class="ov-head"><h2>Weak spots</h2></div>${weak.length?`<div class="ana-list">${weak.map(c=>`<div class="ana-row"><span>${md(c.front)}<small>Forgotten ${p.cards[c.id].l} times · chapter ${esc(c.ch)}</small></span><button class="btn ghost small" data-ms-open="${esc(c.ch)}">Re-read</button></div>`).join('')}</div>`:'<div class="empty">No weak cards yet. Cards you keep forgetting show up here.</div>'}</section></div>`;
+  }else if(tab==='book'){
+    body=`<section class="card ms-cover"><div><div class="ov-eyebrow">The book</div><h2>${esc(C.meta.title)}</h2><p class="muted">${esc(C.meta.subtitle||'')}</p></div><div class="ms-ring" style="--p:${bookPct}"><b>${bookPct}%</b><small>read</small></div></section>
+     ${C.meta.parts.map(pt=>{const list=pt.chapters,rd=list.filter(c=>p.read[c.id]).length;return `<section class="card"><div class="ov-head"><h2>${mi(pt.icon||'book')} Part ${esc(pt.id)} · ${esc(pt.title)}</h2><span class="muted" style="font-size:12.5px">${list.length?`${rd}/${list.length} read`:'Past papers in the Exam room'}</span></div>
+       ${list.length?`<div class="cc-bar" style="margin-bottom:10px"><i style="width:${list.length?rd/list.length*100:0}%"></i></div><div class="ms-toc">${list.map(c=>{const ok=!!C.ch[c.id],r=p.read[c.id];return `<button class="ms-tocr ${ok?'':'soon'}" ${ok?`data-ms-open="${esc(c.id)}"`:'disabled'}><span class="ms-num">${esc(c.id)}</span><span class="ms-tt">${esc(c.title)}<small>${ok?`${c.min||5} min · ${C.cards.filter(x=>x.ch===c.id).length} cards`:'Coming soon'}</small></span><span>${r?`<span class="tag">${mi('check')} Read</span>`:ok?mi('chevron_right'):mi('hourglass_empty')}</span></button>`}).join('')}</div>`:`<button class="btn" data-ms-tab="exam">${mi('quiz')}Open the Exam room</button>`}</section>`}).join('')}`;
+  }else if(tab==='cards'){
+    const groups=chs.filter(c=>C.cards.some(x=>x.ch===c.id));
+    body=`<section class="card"><div class="ov-head"><h2>Your deck</h2><span class="hse-acts">${q.due.length+q.nw.length?`<button class="btn primary small" data-ms-start>${mi('play_arrow')}Review ${q.due.length+q.nw.length}</button>`:''}${readN?`<button class="btn ghost small" data-ms-extra>${mi('fitness_center')}Extra practice</button>`:''}</span></div>
+      <div class="ana-tiles" style="grid-template-columns:repeat(4,minmax(0,1fr))"><div class="stat"><div class="k">Total</div><div class="v">${C.cards.length}</div></div><div class="stat"><div class="k">New</div><div class="v">${C.cards.length-known.length}</div></div><div class="stat"><div class="k">Learning</div><div class="v">${learning}</div></div><div class="stat"><div class="k">Mastered</div><div class="v pos">${mastered}</div><small>3+ weeks between reviews</small></div></div>
+      <p class="muted" style="font-size:12.5px;margin:12px 0 0">Cards unlock when you mark their chapter as read. Each day brings your due reviews plus ${p.newPerDay} new cards.</p></section>
+     ${groups.map(g=>`<section class="card"><div class="ov-head"><h2>${esc(g.id)} · ${esc(g.title)}</h2>${p.read[g.id]?'':`<button class="btn ghost small" data-ms-open="${esc(g.id)}">${mi('lock')}Read to unlock</button>`}</div><div class="ana-list">${C.cards.filter(x=>x.ch===g.id).map(c=>{const s=p.cards[c.id];return `<div class="ana-row"><span>${md(c.front)}<small>${s?(s.i>=21?'Mastered':'Learning')+' · next '+(s.d<=today()?'today':s.d):p.read[g.id]?'New':'Locked'}</small></span><span class="tag">${s?ivlText(s.i):'–'}</span></div>`}).join('')}</div></section>`).join('')}`;
+  }else{
+    body=`${C.papers.map(pp=>{const A=p.answers[pp.id]||{},total=pp.qs.reduce((a,x)=>a+x.m,0),got=pp.qs.reduce((a,x)=>a+(+((A[x.n]||{}).s)||0),0),mk=pp.qs.filter(x=>(A[x.n]||{}).s!=null&&(A[x.n]||{}).s!=='').length,withA=pp.qs.filter(x=>x.a).length;
+      return `<section class="card ms-paper"><div>${mi('description')}</div><div><h3>${esc(pp.title)}</h3><p class="muted">${pp.qs.length} questions · ${total} marks${pp.minutes?` · ${pp.minutes} min`:''} · model answers for ${withA}</p><div class="cc-bar"><i style="width:${mk/pp.qs.length*100}%"></i></div><small class="muted">${mk} marked · score so far ${got}/${total}</small></div><button class="btn primary" data-ms-paper="${esc(pp.id)}">${mk?'Continue':'Start'}</button></section>`}).join('')}
+     <section class="card"><div class="ov-head"><h2>Mock exams</h2></div><div class="empty">Timed mock exams mixing all topics arrive once more chapters are written.</div></section>`;
+  }
+  host.innerHTML=`<div class="ms">${body?`<div class="seg2 ms-tabs" role="group" aria-label="Study sections">${tabs.map(([k,l,i])=>`<button data-ms-tab="${k}" aria-pressed="${k===tab}">${mi(i)} ${l}</button>`).join('')}</div>`:''}${body}</div>`;
+  if(signed)refresh(false);
+}
+
+/* ---------- events ---------- */
+document.addEventListener('click',e=>{
+  const B=a=>e.target.closest('['+a+']');let b;
+  if(b=B('data-ms-tab')){tab=b.dataset.msTab;close();render();return}
+  if(B('data-ms-close')){if(S&&S.done&&!e.target.closest('.ms-done'))return endSession();S=null;paperOpen=null;close();render();return}
+  if(b=B('data-ms-open')){S=null;openChapter(b.dataset.msOpen);return}
+  if(b=B('data-ms-markread')){const p=P(),id=b.dataset.msMarkread;if(!p.read[id]){p.read[id]=today();day(p).les++;addXP(p,20);save(p)}openChapter(id);render();return}
+  if(B('data-ms-start')){startSession(false);return}
+  if(B('data-ms-extra')){startSession(true);return}
+  if(B('data-ms-show')){S.shown=true;drawCard();return}
+  if(b=B('data-ms-grade')){grade(+b.dataset.msGrade);return}
+  if(b=B('data-ms-paper')){openPaper(b.dataset.msPaper);return}
+  if(B('data-ms-reload')){loadErr='';refresh(true);render();return}
+});
+document.addEventListener('change',e=>{
+  if(e.target.matches('[data-ms-npd]')){const p=P();p.newPerDay=+e.target.value;save(p);render();return}
+  if(e.target.matches('[data-ms-score]')&&paperOpen){const p=P(),n=e.target.dataset.msScore;p.answers[paperOpen]=p.answers[paperOpen]||{};const a=p.answers[paperOpen][n]=p.answers[paperOpen][n]||{};const first=a.s==null||a.s==='';a.s=e.target.value;if(first&&a.s!=='')addXP(p,5);save(p);
+    const pp=C.papers.find(x=>x.id===paperOpen),A=p.answers[paperOpen];const el=$('msScore');if(el)el.textContent=pp.qs.reduce((s,x)=>s+(+((A[x.n]||{}).s)||0),0)+' / '+pp.qs.reduce((s,x)=>s+x.m,0)}
+});
+let ansT=null;
+document.addEventListener('input',e=>{if(e.target.matches('[data-ms-ans]')&&paperOpen){clearTimeout(ansT);const n=e.target.dataset.msAns,v=e.target.value,pid=paperOpen;ansT=setTimeout(()=>{const p=P();p.answers[pid]=p.answers[pid]||{};(p.answers[pid][n]=p.answers[pid][n]||{}).t=v;save(p)},400)}});
+document.addEventListener('keydown',e=>{
+  if(!$('msOv'))return;
+  if(e.key==='Escape'){e.preventDefault();if(S&&S.done)return endSession();S=null;paperOpen=null;close();render();return}
+  if(!S||e.target.matches('textarea,input,select'))return;
+  if(!S.shown&&(e.key===' '||e.key==='Enter')){e.preventDefault();S.shown=true;drawCard();return}
+  if(S.shown&&/^[1-4]$/.test(e.key)){e.preventDefault();grade(+e.key-1)}
+});
+window.MetroStudy={render,refresh,dueCount,clear(){C=null;try{localStorage.removeItem(CKEY)}catch(e){}}};
+if(window.CC&&CC.refresh)CC.refresh();
+if(/sc-metro/.test(location.hash))render();
 })();
 </script>
 </body>
