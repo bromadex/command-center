@@ -509,6 +509,17 @@ body.ms-lock{overflow:hidden}
 .ms-g:hover{background:rgba(255,255,255,.12)}
 kbd{font:11px var(--font);padding:1px 6px;border-radius:6px;border:1px solid var(--cc-line);color:var(--cc-ink-3)}
 .ms-done{text-align:center;display:grid;gap:14px;justify-items:center;padding-top:10vh}.ms-done>.material-symbols-outlined{font-size:64px;color:var(--cc-warn)}.ms-done h2{font-size:30px}
+/* mock exams */
+.ms-mopts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.ms-mopt{display:grid;gap:2px;justify-items:center;padding:16px 8px;border-radius:18px;border:1px solid var(--cc-line);background:rgba(169,112,255,.1);color:inherit;font:inherit;cursor:pointer}
+.ms-mopt:hover{background:rgba(169,112,255,.2)}.ms-mopt b{font:700 17px var(--font-display)}.ms-mopt small{color:var(--cc-ink-3)}
+.ms-weak{display:flex;gap:8px;align-items:center;margin:12px 0 0;font-size:14px;color:var(--cc-ink-2)}.ms-weak input{width:auto}
+.ms-hist{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;align-items:end;height:90px;margin-top:14px}
+.ms-hist>div{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;gap:3px}.ms-hist i{display:block;width:100%;border-radius:6px 6px 3px 3px;background:var(--cc-bad)}.ms-hist i.ok{background:var(--cc-good)}.ms-hist small{font-size:10.5px;color:var(--cc-ink-3)}
+.ms-clock{font-variant-numeric:tabular-nums;font-size:15px}.ms-clock.low{color:var(--cc-bad);border-color:var(--cc-bad)}
+.ms-mnav{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:16px}
+.ms-yours{padding:10px 12px;border-radius:12px;background:var(--cc-field);border:1px solid var(--cc-line);white-space:pre-wrap;font-size:15px;margin-bottom:8px}.ms-yours small{display:block;color:var(--cc-ink-3);font-size:11.5px;margin-bottom:2px}
+.ms-mmark{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}.ms-mmark .ms-g[aria-pressed=true]{background:rgba(255,255,255,.18);outline:2px solid var(--cc-lav)}
 /* exam room paper */
 .ms-pq{padding:16px;border-radius:18px;background:var(--cc-glass-tile);border:1px solid var(--cc-line);margin:0 0 12px}
 .ms-pqh{display:flex;justify-content:space-between}.ms-pq p{margin:6px 0 10px}
@@ -4980,7 +4991,7 @@ const addDays=(iso,n)=>{const d=new Date(iso+'T00:00:00');d.setDate(d.getDate()+
 const LEVELS=[[0,'Apprentice'],[150,'Trainee technician'],[400,'Scale technician'],[900,'Senior technician'],[1800,'Examiner'],[3500,'Inspector'],[6000,'Superintendent']];
 
 /* ---------- progress ---------- */
-const blank=()=>({read:{},cards:{},days:{},xp:0,answers:{},newPerDay:5});
+const blank=()=>({read:{},cards:{},days:{},xp:0,answers:{},newPerDay:5,mocks:[]});
 function P(){try{const p=JSON.parse(localStorage.getItem(PKEY)||'null');if(p&&typeof p==='object')return Object.assign(blank(),p)}catch(e){}return blank()}
 function save(p){try{localStorage.setItem(PKEY,JSON.stringify(p))}catch(e){}}
 const day=(p,d)=>(p.days[d||today()]=p.days[d||today()]||{rev:0,ok:0,xp:0,les:0,nw:0});
@@ -5089,6 +5100,45 @@ function endSession(){const p=P(),pct=S.done?Math.round(S.ok/S.done*100):0,st=st
     <button class="btn primary" data-ms-close>Back to study</button></div>`);S=null;render()}
 
 /* ---------- exam room ---------- */
+/* ---------- mock exams ---------- */
+let M=null,mTimer=null;
+function buildMock(n,weak){const p=P(),read=Object.keys(p.read);
+  const cards=C.cards.filter(c=>!read.length||p.read[c.ch]);
+  const w=c=>{const s=p.cards[c.id];if(!s)return 1;let x=s.i>=21?.4:1;if(s.l)x+=2*s.l;if(s.d<=today())x+=1;return weak?x:1};
+  const pick=(arr,k,wf)=>{const a=arr.map(x=>({x,k:Math.pow(Math.random(),1/Math.max(.05,wf(x)))}));a.sort((u,v)=>v.k-u.k);return a.slice(0,k).map(o=>o.x)};
+  const paperQs=C.papers.flatMap(pp=>pp.qs.filter(q=>q.a).map(q=>({kind:'paper',id:pp.id+':'+q.n,q:q.q,a:q.a,src:q.src||pp.title,m:Math.min(q.m,5)})));
+  const nPaper=Math.min(paperQs.length,Math.round(n*.3)),nCard=n-nPaper;
+  const qs=[...pick(cards,nCard,w).map(c=>({kind:'card',id:c.id,q:c.front,a:c.back,src:c.src||('Chapter '+c.ch),m:2})),...pick(paperQs,nPaper,()=>1)];
+  for(let i=qs.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[qs[i],qs[j]]=[qs[j],qs[i]]}
+  return qs}
+function startMock(n,weak){if(!C)return;const qs=buildMock(n,weak);if(!qs.length){alert('Read a chapter first so there are questions to ask.');return}
+  M={qs,i:0,ans:{},marks:{},phase:'answer',end:Date.now()+Math.round(qs.length*90)*1000,n:qs.length};clearInterval(mTimer);mTimer=setInterval(mTick,1000);drawMock()}
+function mLeft(){return Math.max(0,Math.round((M.end-Date.now())/1000))}
+const mClock=s=>Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+function mTick(){if(!M||M.phase!=='answer'){clearInterval(mTimer);return}const el=$('msClock');const l=mLeft();if(el){el.textContent=mClock(l);el.classList.toggle('low',l<60)}if(!l){M.phase='review';drawMock()}}
+function saveAns(){const t=document.querySelector('[data-ms-mans]');if(t&&M)M.ans[M.i]=t.value}
+function drawMock(){
+  if(M.phase==='answer'){const q=M.qs[M.i];
+    overlay(`<header class="ms-ovh"><button class="icon" data-ms-mquit aria-label="Quit">${mi('close')}</button><div><small>Mock exam · question ${M.i+1} of ${M.n}</small><b>${q.kind==='paper'?'Past-paper question':'Short answer'} · ${q.m} mark${q.m>1?'s':''}</b></div><span class="tag ms-clock" id="msClock">${mClock(mLeft())}</span></header>
+     <div class="ms-progress"><i style="width:${Math.round(M.i/M.n*100)}%"></i></div>
+     <div class="ms-card"><div class="ms-front">${md(q.q)}</div><textarea class="ms-try" data-ms-mans rows="5" placeholder="Write your answer">${esc(M.ans[M.i]||'')}</textarea></div>
+     <div class="ms-mnav"><button class="btn ghost" data-ms-mprev ${M.i?'':'disabled'}>${mi('arrow_back')}Back</button><span class="muted">${Object.values(M.ans).filter(x=>x&&x.trim()).length} answered</span>${M.i<M.n-1?`<button class="btn primary" data-ms-mnext>Next${mi('arrow_forward')}</button>`:`<button class="btn primary" data-ms-mfinish>${mi('flag')}Finish</button>`}</div>`);
+    const t=document.querySelector('[data-ms-mans]');if(t)t.focus();return}
+  // review and self-marking
+  clearInterval(mTimer);const tot=M.qs.reduce((a,q)=>a+q.m,0),got=M.qs.reduce((a,q,i)=>a+(M.marks[i]??0),0),done=M.qs.filter((q,i)=>M.marks[i]!=null).length;
+  overlay(`<header class="ms-ovh"><button class="icon" data-ms-mquit aria-label="Close">${mi('close')}</button><div><small>Mock exam · mark yourself honestly</small><b>${done} of ${M.n} marked</b></div><span class="tag">${got} / ${tot}</span></header>
+   <article class="ms-read">${M.qs.map((q,i)=>{const mk=M.marks[i];return `<div class="ms-pq"><div class="ms-pqh"><b>Q${i+1}</b><span class="muted">[${q.m}]</span></div><p>${md(q.q)}</p>
+     <div class="ms-yours"><small>Your answer</small>${M.ans[i]&&M.ans[i].trim()?esc(M.ans[i]):'<i class="muted">No answer</i>'}</div>
+     <div class="ms-model">${md(q.a)}<small class="ms-src">${esc(q.src)}</small></div>
+     <div class="ms-mmark">${[[q.m,'Right','good'],[Math.round(q.m/2*10)/10,'Partly','hard'],[0,'Wrong','again']].map(([v,l,c])=>`<button class="ms-g ${c}" data-ms-mmark="${i}" data-v="${v}" aria-pressed="${mk===v}"><b>${l}</b><small>${v}</small></button>`).join('')}</div></div>`}).join('')}
+   <footer class="ms-readf"><span class="muted">Wrong flashcard questions go back into today's review.</span><button class="btn primary" data-ms-msave ${done===M.n?'':'disabled'}>${mi('save')}Save result</button></footer></article>`);
+}
+function saveMock(){const p=P(),tot=M.qs.reduce((a,q)=>a+q.m,0),got=M.qs.reduce((a,q,i)=>a+(M.marks[i]??0),0);
+  M.qs.forEach((q,i)=>{if(q.kind==='card'&&(M.marks[i]??0)<q.m){const s=p.cards[q.id]||{i:0,e:2.5,r:0,l:0};s.l=(s.l||0)+1;s.r=0;s.i=0;s.e=Math.max(1.3,(s.e||2.5)-.2);s.d=today();p.cards[q.id]=s}});
+  p.mocks=[...(p.mocks||[]),{at:today(),n:M.n,got,tot,pct:tot?Math.round(got/tot*100):0}].slice(-30);
+  addXP(p,10+Math.round(got));day(p).rev+=M.n;day(p).ok+=M.qs.filter((q,i)=>(M.marks[i]??0)>=q.m).length;save(p);
+  const pct=tot?Math.round(got/tot*100):0;M=null;
+  overlay(`<div class="ms-done">${mi(pct>=50?'military_tech':'school')}<h2>${pct}%</h2><p>${got} of ${tot} marks · ${pct>=75?'Excellent':pct>=50?'Pass level, keep going':'Keep practising: your weak cards are queued for today'}</p><button class="btn primary" data-ms-close>Back to the Exam room</button></div>`);render()}
 let paperOpen=null;
 function openPaper(id){
   const pp=C.papers.find(x=>x.id===id);if(!pp)return;paperOpen=id;const p=P(),A=p.answers[id]||{};
@@ -5144,7 +5194,12 @@ function render(){
   }else{
     body=`${C.papers.map(pp=>{const A=p.answers[pp.id]||{},total=pp.qs.reduce((a,x)=>a+x.m,0),got=pp.qs.reduce((a,x)=>a+(+((A[x.n]||{}).s)||0),0),mk=pp.qs.filter(x=>(A[x.n]||{}).s!=null&&(A[x.n]||{}).s!=='').length,withA=pp.qs.filter(x=>x.a).length;
       return `<section class="card ms-paper"><div>${mi('description')}</div><div><h3>${esc(pp.title)}</h3><p class="muted">${pp.qs.length} questions · ${total} marks${pp.minutes?` · ${pp.minutes} min`:''} · model answers for ${withA}</p><div class="cc-bar"><i style="width:${mk/pp.qs.length*100}%"></i></div><small class="muted">${mk} marked · score so far ${got}/${total}</small></div><button class="btn primary" data-ms-paper="${esc(pp.id)}">${mk?'Continue':'Start'}</button></section>`}).join('')}
-     <section class="card"><div class="ov-head"><h2>Mock exams</h2></div><div class="empty">Timed mock exams mixing all topics arrive once more chapters are written.</div></section>`;
+     ${(()=>{const hist=(p.mocks||[]).slice(-8),best=hist.reduce((m,x)=>Math.max(m,x.pct),0),last=hist[hist.length-1];
+      return `<section class="card"><div class="ov-head"><h2>${mi('timer')} Mock exams</h2>${last?`<span class="muted" style="font-size:12.5px">last ${last.pct}% · best ${best}%</span>`:''}</div>
+      <p class="muted" style="margin:0 0 12px">A timed mix of flashcard questions from the chapters you've read and real past-paper questions, about 1½ minutes each. You mark yourself against the model answers; anything you miss goes back into your daily review.</p>
+      <div class="ms-mopts">${[[10,'Quick'],[20,'Standard'],[30,'Full']].map(([n,l])=>`<button class="ms-mopt" data-ms-mock="${n}"><b>${l}</b><span>${n} questions</span><small>${Math.round(n*1.5)} min</small></button>`).join('')}</div>
+      <label class="ms-weak"><input type="checkbox" id="msWeak" checked> Focus on my weak cards</label>
+      ${hist.length?`<div class="ms-hist">${hist.map(h=>`<div title="${h.at}: ${h.got}/${h.tot}"><i style="height:${Math.max(6,h.pct)}%" class="${h.pct>=50?'ok':''}"></i><small>${h.pct}%</small></div>`).join('')}</div>`:''}</section>`})()}`;
   }
   host.innerHTML=`<div class="ms">${body?`<div class="seg2 ms-tabs" role="group" aria-label="Study sections">${tabs.map(([k,l,i])=>`<button data-ms-tab="${k}" aria-pressed="${k===tab}">${mi(i)} ${l}</button>`).join('')}</div>`:''}${body}</div>`;
   if(signed)refresh(false);
@@ -5165,6 +5220,13 @@ document.addEventListener('click',e=>{
   if(b=B('data-ms-3d')){const back=document.querySelector('.ms-read')?lastChapter:null;const m=b.dataset.ms3d,t=b.dataset.ms3dt;
     overlay(`<header class="ms-ovh"><button class="icon" ${back?`data-ms-open="${esc(back)}"`:'data-ms-close'} aria-label="Back">${mi('arrow_back')}</button><div><small>3D model</small><b>${esc(t)}</b></div><a class="btn ghost small" href="models/metrology3d.html#${esc(m)}" target="_blank" rel="noopener">${mi('open_in_new')}Full screen</a></header><iframe class="ms-3d" src="models/metrology3d.html#${esc(m)}" title="${esc(t)}" allow="fullscreen"></iframe>`);return}
   if(B('data-ms-reload')){loadErr='';refresh(true);render();return}
+  if(b=B('data-ms-mock')){const wk=$('msWeak');startMock(+b.dataset.msMock,!wk||wk.checked);return}
+  if(B('data-ms-mnext')){saveAns();M.i++;drawMock();return}
+  if(B('data-ms-mprev')){saveAns();M.i--;drawMock();return}
+  if(B('data-ms-mfinish')){saveAns();if(confirm('Finish the exam and see the answers?')){M.phase='review';drawMock()}return}
+  if(b=B('data-ms-mmark')){const y=document.querySelector('.ms-ov-in').scrollTop;M.marks[+b.dataset.msMmark]=+b.dataset.v;drawMock();document.querySelector('.ms-ov-in').scrollTop=y;return}
+  if(B('data-ms-msave')){saveMock();return}
+  if(B('data-ms-mquit')){if(M&&M.phase==='answer'&&!confirm('Quit this mock exam? Your answers will be lost.'))return;clearInterval(mTimer);M=null;close();render();return}
 });
 document.addEventListener('change',e=>{
   if(e.target.matches('[data-ms-npd]')){const p=P();p.newPerDay=+e.target.value;save(p);render();return}
@@ -5175,6 +5237,7 @@ let ansT=null;
 document.addEventListener('input',e=>{if(e.target.matches('[data-ms-ans]')&&paperOpen){clearTimeout(ansT);const n=e.target.dataset.msAns,v=e.target.value,pid=paperOpen;ansT=setTimeout(()=>{const p=P();p.answers[pid]=p.answers[pid]||{};(p.answers[pid][n]=p.answers[pid][n]||{}).t=v;save(p)},400)}});
 document.addEventListener('keydown',e=>{
   if(!$('msOv'))return;
+  if(M&&e.key==='Escape'){e.preventDefault();return}
   if(e.key==='Escape'){e.preventDefault();if(S&&S.done)return endSession();S=null;paperOpen=null;close();render();return}
   if(!S||e.target.matches('textarea,input,select'))return;
   if(!S.shown&&(e.key===' '||e.key==='Enter')){e.preventDefault();S.shown=true;drawCard();return}
